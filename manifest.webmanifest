@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "여행 환율 계산기",
+  "short_name": "여행환율",
+  "description": "해외여행용 환율 계산기. 현지 통화와 원화 비교, 현지 시간·날씨, 팁·봉사료·n분의 1 정산.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF2FA",
+  "theme_color": "#1F4FD1",
+  "categories": ["travel", "finance", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

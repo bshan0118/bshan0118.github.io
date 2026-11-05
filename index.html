@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>여행 환율 계산기</title>
+<meta name="description" content="해외여행용 환율 계산기. 현지 통화와 원화를 바로 비교하고, 현지 시간·날씨, 팁·봉사료·n분의 1 정산까지 한 번에.">
+<meta name="theme-color" content="#1F4FD1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="여행환율">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 한 줄 3칸 통화 카드(현지·기준·USD) → 계산기 디스플레이+숫자패드 → 정산(팁·봉사료·인원·n분의1). 폰 폭에서도 3칸 유지, 하단은 1열 */
+:root{
+  --bg:#E9EDF1; --paper:#FBFCFD; --ink:#13202E; --muted:#5B6878; --line:#D3DAE2;
+  --key:#F1F4F7; --accent:#1F4FD1; --accent-ink:#FFFFFF; --accent-soft:#E3EAFB; --stamp:#C2412D; --good:#1E7A55;
+  --f-sans:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E141B; --paper:#17202A; --ink:#E6ECF2; --muted:#93A1B1; --line:#2A3542;
+  --key:#1E2935; --accent:#7DA2FF; --accent-ink:#0E141B; --accent-soft:#1D2A44; --stamp:#F0806C; --good:#5FCB9C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141B; --paper:#17202A; --ink:#E6ECF2; --muted:#93A1B1; --line:#2A3542;
+  --key:#1E2935; --accent:#7DA2FF; --accent-ink:#0E141B; --accent-soft:#1D2A44; --stamp:#F0806C; --good:#5FCB9C; color-scheme:dark}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;color-scheme:light}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;overscroll-behavior-y:none}
+img{max-width:100%}
+[hidden]{display:none!important}
+button{touch-action:manipulation}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.45;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:14px 28px}
+@media (min-width:480px){body{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(10px,2.5vw,16px)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:600}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.top h1{margin:0;font-size:clamp(17px,4.5vw,22px);font-weight:700;letter-spacing:-.01em}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted)}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.status.live{color:var(--good)} .status.live i{background:var(--good)}
+.status.off i{background:var(--stamp)}
+
+/* ---- 통화 카드 3칸 (항상 한 줄) ---- */
+.board{display:flex;flex-direction:column;gap:clamp(6px,1.6vw,10px)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:clamp(10px,2.5vw,14px);
+  padding:clamp(10px,2.4vw,14px) clamp(12px,3vw,18px);display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+  grid-template-areas:"role amt" "head amt" "rate amt";column-gap:clamp(10px,2.5vw,16px);row-gap:4px;align-items:center;min-width:0;position:relative}
+.c-role{grid-area:role}
+.c-head{grid-area:head;display:flex;align-items:center;gap:clamp(6px,2vw,14px);min-width:0}
+.c-head .c-country{flex:1 1 auto;min-width:0}
+.card.local{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.c-role{font-size:clamp(11px,2.8vw,13px);font-weight:600;letter-spacing:.05em;color:var(--muted)}
+.card.local .c-role{color:var(--accent)}
+/* 1행: 국기 + 나라 */
+.c-country{display:flex;align-items:center;gap:clamp(5px,1.6vw,10px);min-width:0;position:relative}
+.c-flag{font-size:clamp(28px,8vw,48px);line-height:1;flex:none}
+.c-name{min-width:3.2em;flex:1 1 auto;display:flex;flex-direction:column}
+.c-name b{font-size:clamp(17px,4.8vw,26px);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-name span{font-size:clamp(11px,2.9vw,13px);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-caret{display:none}
+.c-country select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:16px}
+.c-city{position:relative;z-index:2;display:inline-flex;align-items:center;gap:3px;max-width:100%}
+.c-city.multi [data-city]{text-decoration:underline dotted;text-underline-offset:3px}
+.c-city.multi::after{content:"▾";font-size:11px;color:var(--muted)}
+.c-city select{position:absolute;inset:0;opacity:0;width:100%;font-size:16px;cursor:pointer}
+.fxdate{margin:0;display:flex;justify-content:space-between;align-items:center;gap:4px 10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.fxdate b{color:var(--ink);font-weight:600}
+.fxdate.stale b{color:var(--stamp)}
+.fxdate a{color:var(--muted)}
+/* 2행: 날씨 · 시간 */
+.c-meta{display:flex;flex-direction:column;gap:1px;flex:0 0 auto;font-size:clamp(12px,3.3vw,17px);line-height:1.25;
+  border-left:1px solid var(--line);padding-left:clamp(8px,2.2vw,12px)}
+.c-meta .w{white-space:nowrap}
+.c-meta .t{font-family:var(--f-mono);font-weight:600;white-space:nowrap}
+/* 3행: 환율 정보 */
+.c-amt{grid-area:amt;min-width:0;overflow:hidden;text-align:right;align-self:stretch;display:flex;flex-direction:column;justify-content:center;
+  border-left:1px dashed var(--line);padding-left:clamp(8px,2vw,14px)}
+.c-amt .n{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;line-height:1.05;white-space:nowrap;letter-spacing:-.02em;font-size:28px}
+.c-amt small{display:block;font-size:clamp(12px,3.2vw,15px);font-weight:600;color:var(--muted);margin-top:2px;font-family:var(--f-mono)}
+.c-amt .usd{display:block;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:clamp(13px,3.6vw,17px);color:var(--muted);margin-top:4px;white-space:nowrap}
+.c-rate{grid-area:rate;font-size:clamp(11px,2.9vw,14px);color:var(--muted);font-family:var(--f-mono);line-height:1.3;word-break:break-all}
+
+/* ---- 계산기 + 정산 ---- */
+.lower{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"calc" "ctrl" "res";gap:clamp(8px,2vw,16px);align-items:stretch}
+.settle{grid-area:ctrl}.calc{grid-area:calc}.result{grid-area:res}
+@media (min-width:880px){.lower{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);grid-template-areas:"calc res" "ctrl res";align-items:start}}
+.result{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2.5vw,14px);display:flex;flex-direction:column;gap:12px}
+.calc{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2.5vw,14px);display:flex;flex-direction:column;gap:10px}
+.display{background:var(--bg);border-radius:10px;padding:10px 12px;text-align:right;min-width:0}
+.d-expr{font-family:var(--f-mono);font-size:17px;color:var(--muted);min-height:1.4em;word-break:break-all}
+.d-val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:clamp(28px,8vw,40px);line-height:1.15;word-break:break-all}
+.d-val small{font-size:.42em;color:var(--muted);font-weight:500;margin-left:4px;white-space:nowrap;display:inline-block}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.6vw,8px)}
+.pad button{border:none;background:var(--key);border-radius:10px;height:clamp(50px,13vw,58px);font-size:clamp(18px,5vw,22px);font-family:var(--f-mono);cursor:pointer;transition:filter .1s,transform .05s}
+.pad button:active{transform:scale(.97);filter:brightness(.93)}
+.pad .op{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.pad .fn{color:var(--muted);font-family:var(--f-sans);font-size:clamp(15px,4.2vw,18px);font-weight:600}
+.pad .eq{background:var(--accent);color:var(--accent-ink);font-weight:600}
+
+.settle{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(10px,2.5vw,14px) clamp(6px,2vw,14px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.settle h2,.result h2{margin:0;font-size:20px}
+.ctrl{display:flex;flex-direction:column;gap:8px;min-width:0;padding-inline:clamp(4px,1.6vw,12px)}
+.ctrl .lbl b{display:block;font-size:clamp(15px,4.2vw,18px);white-space:nowrap;text-align:center}
+.ctrl .lbl span{display:none}
+.ctrl .desc{margin:0;font-size:clamp(11px,3vw,13px);line-height:1.4;color:var(--muted);text-align:center;word-break:keep-all}
+.ctrl + .ctrl{border-left:1px dashed var(--line)}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--bg);overflow:hidden}
+.stepper button{border:none;background:none;width:clamp(26px,7vw,40px);height:42px;flex:none;cursor:pointer;font-size:22px}
+.stepper output{flex:1;min-width:0;text-align:center;font-family:var(--f-mono);font-weight:600;font-size:clamp(15px,4.4vw,22px);white-space:nowrap}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.chips button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 0;font-size:clamp(12px,3.4vw,15px);letter-spacing:-.03em;font-weight:600;cursor:pointer;font-family:var(--f-mono)}
+.chips button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.sum{background:var(--bg);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.ln{display:flex;justify-content:space-between;gap:10px;font-size:17px}
+.ln span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+.ln.total{font-weight:600;border-top:1px dashed var(--line);padding-top:6px;margin-top:2px}
+.per{border:2px solid var(--accent);border-radius:10px;padding:10px 12px}
+.per .main{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:clamp(24px,7vw,30px);color:var(--accent);word-break:break-all;line-height:1.2}
+.per .label{font-size:14px}
+.per .main{font-size:clamp(28px,8.5vw,36px)!important}
+.per .conv{display:flex;flex-wrap:wrap;gap:2px 14px;font-family:var(--f-mono);font-size:16px;color:var(--muted);margin-top:2px}
+.foot{font-size:13px;color:var(--muted);text-align:center;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>여행 환율 계산기</h1>
+    <span class="status" id="fxStatus"><i></i><span>환율 불러오는 중</span></span>
+  </header>
+
+  <section class="board" aria-label="환율">
+    <div class="card local" id="cardL">
+      <div class="c-role">현지</div>
+      <div class="c-head">
+        <div class="c-country"><span class="c-flag" data-f></span><span class="c-name"><b data-n></b><span class="c-city"><span data-city></span><select data-citysel aria-label="도시 선택"></select></span></span><span class="c-caret">▼</span>
+          <select id="selL" aria-label="여행 국가 선택"></select></div>
+        <div class="c-meta"><span class="w" data-w>—</span><span class="t" data-t>--:--</span></div>
+      </div>
+      <div class="c-amt" data-a>0</div>
+      <div class="c-rate" data-r></div>
+    </div>
+    <div class="card" id="cardB">
+      <div class="c-role">기준</div>
+      <div class="c-head">
+        <div class="c-country"><span class="c-flag" data-f></span><span class="c-name"><b data-n></b><span class="c-city"><span data-city></span><select data-citysel aria-label="도시 선택"></select></span></span><span class="c-caret">▼</span>
+          <select id="selB" aria-label="기준 국가 선택"></select></div>
+        <div class="c-meta"><span class="w" data-w>—</span><span class="t" data-t>--:--</span></div>
+      </div>
+      <div class="c-amt" data-a>0</div>
+      <div class="c-rate" data-r></div>
+    </div>
+  </section>
+  <p class="fxdate" id="fxDate"><span>환율 기준 <b id="fxWhen">—</b></span><a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates By Exchange Rate API</a></p>
+
+  <div class="lower">
+    <section class="calc" aria-label="계산기">
+      <div class="display">
+        <div class="d-expr" id="dExpr">&nbsp;</div>
+        <div class="d-val" id="dVal" aria-live="polite">0</div>
+      </div>
+      <div class="pad" id="pad">
+        <button class="fn" data-k="C">C</button><button class="fn" data-k="back" aria-label="지우기">⌫</button><button class="fn" data-k="%">%</button><button class="op" data-k="/" aria-label="나누기">÷</button>
+        <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="op" data-k="*" aria-label="곱하기">×</button>
+        <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="op" data-k="-" aria-label="빼기">−</button>
+        <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="op" data-k="+" aria-label="더하기">+</button>
+        <button data-k="00">00</button><button data-k="0">0</button><button data-k=".">.</button><button class="eq" data-k="=">=</button>
+      </div>
+    </section>
+
+    <section class="settle" aria-label="정산">
+      <div class="ctrl">
+        <div class="lbl"><b>Tip</b></div>
+        <div class="stepper"><button data-s="tip" data-d="-1" aria-label="Tip 줄이기">−</button><output id="oTip">0%</output><button data-s="tip" data-d="1" aria-label="Tip 늘리기">+</button></div>
+        <div class="chips" data-chips="tip"></div>
+        <p class="desc" id="tipHint"></p>
+      </div>
+      <div class="ctrl">
+        <div class="lbl"><b>Service</b></div>
+        <div class="stepper"><button data-s="svc" data-d="-1" aria-label="Service 줄이기">−</button><output id="oSvc">0%</output><button data-s="svc" data-d="1" aria-label="Service 늘리기">+</button></div>
+        <div class="chips" data-chips="svc"></div>
+        <p class="desc">계산서에 따로 붙는 봉사료·세금. 가격에 포함이면 0%</p>
+      </div>
+      <div class="ctrl">
+        <div class="lbl"><b>인원</b></div>
+        <div class="stepper"><button data-s="ppl" data-d="-1" aria-label="인원 줄이기">−</button><output id="oPpl">1명</output><button data-s="ppl" data-d="1" aria-label="인원 늘리기">+</button></div>
+        <div class="chips" data-chips="ppl"></div>
+        <p class="desc">총액을 나눌 사람 수 (n분의 1)</p>
+      </div>
+    </section>
+    <section class="result" aria-label="정산 결과">
+      <h2>정산 결과</h2>
+      <div class="sum" aria-live="polite">
+        <div class="ln"><span>합계</span><span id="sSub">0</span></div>
+        <div class="ln"><span id="sTipL">Tip 0%</span><span id="sTip">0</span></div>
+        <div class="ln"><span id="sSvcL">Service 0%</span><span id="sSvc">0</span></div>
+        <div class="ln total"><span>총액</span><span id="sTot">0</span></div>
+      </div>
+      <div class="per">
+        <div class="label" id="perL">1인당</div>
+        <div class="main" id="pMain">0</div>
+        <div class="conv"><span id="pB"></span><span id="pU"></span></div>
+      </div>
+    </section>
+  </div>
+  <p class="foot">계산기에 현지 통화 금액을 입력하세요. 환율은 참고용이며 카드·환전소 환율과 차이가 있을 수 있어요.<br>날씨 정보: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a> · <a href="privacy.html" style="color:inherit">개인정보처리방침</a></p>
+</div>
+
+<script>
+// 지역별 국가 · 도시 [이름, 시간대, 위도, 경도]
+const R={A:"아시아",E:"유럽",M:"중동·아프리카",N:"미주",O:"오세아니아·태평양"};
+const COUNTRIES=[
+ {c:"KR",r:"A",n:"한국",cur:"KRW",tip:0,f:"🇰🇷",cities:[["서울","Asia/Seoul",37.57,126.98],["부산","Asia/Seoul",35.18,129.08],["제주","Asia/Seoul",33.50,126.53]]},
+ {c:"JP",r:"A",n:"일본",cur:"JPY",tip:0,f:"🇯🇵",cities:[["도쿄","Asia/Tokyo",35.68,139.69],["오사카","Asia/Tokyo",34.69,135.50],["후쿠오카","Asia/Tokyo",33.59,130.40],["삿포로","Asia/Tokyo",43.06,141.35],["오키나와","Asia/Tokyo",26.21,127.68]]},
+ {c:"CN",r:"A",n:"중국",cur:"CNY",tip:0,f:"🇨🇳",cities:[["베이징","Asia/Shanghai",39.90,116.40],["상하이","Asia/Shanghai",31.23,121.47],["칭다오","Asia/Shanghai",36.07,120.38]]},
+ {c:"TW",r:"A",n:"대만",cur:"TWD",tip:0,f:"🇹🇼",cities:[["타이베이","Asia/Taipei",25.03,121.56],["가오슝","Asia/Taipei",22.63,120.30]]},
+ {c:"HK",r:"A",n:"홍콩",cur:"HKD",tip:0,f:"🇭🇰",cities:[["홍콩","Asia/Hong_Kong",22.32,114.17]]},
+ {c:"MO",r:"A",n:"마카오",cur:"MOP",tip:0,f:"🇲🇴",cities:[["마카오","Asia/Macau",22.20,113.54]]},
+ {c:"MN",r:"A",n:"몽골",cur:"MNT",tip:0,f:"🇲🇳",cities:[["울란바토르","Asia/Ulaanbaatar",47.89,106.91]]},
+ {c:"TH",r:"A",n:"태국",cur:"THB",tip:0,f:"🇹🇭",cities:[["방콕","Asia/Bangkok",13.75,100.50],["치앙마이","Asia/Bangkok",18.79,98.98],["푸껫","Asia/Bangkok",7.88,98.39]]},
+ {c:"VN",r:"A",n:"베트남",cur:"VND",tip:0,f:"🇻🇳",cities:[["다낭","Asia/Ho_Chi_Minh",16.05,108.20],["하노이","Asia/Ho_Chi_Minh",21.03,105.85],["호찌민","Asia/Ho_Chi_Minh",10.82,106.63],["나트랑","Asia/Ho_Chi_Minh",12.24,109.19],["푸꾸옥","Asia/Ho_Chi_Minh",10.29,103.98]]},
+ {c:"LA",r:"A",n:"라오스",cur:"LAK",tip:0,f:"🇱🇦",cities:[["비엔티안","Asia/Vientiane",17.97,102.63],["루앙프라방","Asia/Vientiane",19.89,102.13]]},
+ {c:"KH",r:"A",n:"캄보디아",cur:"KHR",tip:0,f:"🇰🇭",cities:[["시엠레아프","Asia/Phnom_Penh",13.36,103.86],["프놈펜","Asia/Phnom_Penh",11.56,104.92]]},
+ {c:"PH",r:"A",n:"필리핀",cur:"PHP",tip:0,f:"🇵🇭",cities:[["세부","Asia/Manila",10.32,123.89],["마닐라","Asia/Manila",14.60,120.98],["보라카이","Asia/Manila",11.97,121.92]]},
+ {c:"SG",r:"A",n:"싱가포르",cur:"SGD",tip:0,f:"🇸🇬",cities:[["싱가포르","Asia/Singapore",1.35,103.82]]},
+ {c:"MY",r:"A",n:"말레이시아",cur:"MYR",tip:0,f:"🇲🇾",cities:[["쿠알라룸푸르","Asia/Kuala_Lumpur",3.14,101.69],["코타키나발루","Asia/Kuching",5.98,116.07]]},
+ {c:"ID",r:"A",n:"인도네시아",cur:"IDR",tip:0,f:"🇮🇩",cities:[["발리","Asia/Makassar",-8.65,115.22],["자카르타","Asia/Jakarta",-6.21,106.85]]},
+ {c:"IN",r:"A",n:"인도",cur:"INR",tip:10,f:"🇮🇳",cities:[["뉴델리","Asia/Kolkata",28.61,77.21],["뭄바이","Asia/Kolkata",19.08,72.88]]},
+ {c:"NP",r:"A",n:"네팔",cur:"NPR",tip:10,f:"🇳🇵",cities:[["카트만두","Asia/Kathmandu",27.72,85.32]]},
+ {c:"LK",r:"A",n:"스리랑카",cur:"LKR",tip:10,f:"🇱🇰",cities:[["콜롬보","Asia/Colombo",6.93,79.85]]},
+ {c:"MV",r:"A",n:"몰디브",cur:"MVR",tip:10,f:"🇲🇻",cities:[["말레","Indian/Maldives",4.18,73.51]]},
+ {c:"UZ",r:"A",n:"우즈베키스탄",cur:"UZS",tip:0,f:"🇺🇿",cities:[["타슈켄트","Asia/Tashkent",41.30,69.24],["사마르칸트","Asia/Samarkand",39.65,66.96]]},
+ {c:"KZ",r:"A",n:"카자흐스탄",cur:"KZT",tip:10,f:"🇰🇿",cities:[["알마티","Asia/Almaty",43.24,76.89]]},
+ {c:"RU",r:"A",n:"러시아",cur:"RUB",tip:10,f:"🇷🇺",cities:[["블라디보스토크","Asia/Vladivostok",43.12,131.89],["모스크바","Europe/Moscow",55.76,37.62]]},
+ {c:"GB",r:"E",n:"영국",cur:"GBP",tip:10,f:"🇬🇧",cities:[["런던","Europe/London",51.51,-0.13],["에든버러","Europe/London",55.95,-3.19]]},
+ {c:"IE",r:"E",n:"아일랜드",cur:"EUR",tip:10,f:"🇮🇪",cities:[["더블린","Europe/Dublin",53.35,-6.26]]},
+ {c:"FR",r:"E",n:"프랑스",cur:"EUR",tip:0,f:"🇫🇷",cities:[["파리","Europe/Paris",48.86,2.35],["니스","Europe/Paris",43.70,7.27]]},
+ {c:"IT",r:"E",n:"이탈리아",cur:"EUR",tip:0,f:"🇮🇹",cities:[["로마","Europe/Rome",41.90,12.50],["밀라노","Europe/Rome",45.46,9.19],["피렌체","Europe/Rome",43.77,11.26],["베네치아","Europe/Rome",45.44,12.32]]},
+ {c:"ES",r:"E",n:"스페인",cur:"EUR",tip:0,f:"🇪🇸",cities:[["바르셀로나","Europe/Madrid",41.39,2.17],["마드리드","Europe/Madrid",40.42,-3.70],["세비야","Europe/Madrid",37.39,-5.98]]},
+ {c:"PT",r:"E",n:"포르투갈",cur:"EUR",tip:5,f:"🇵🇹",cities:[["리스본","Europe/Lisbon",38.72,-9.14],["포르투","Europe/Lisbon",41.15,-8.61]]},
+ {c:"DE",r:"E",n:"독일",cur:"EUR",tip:5,f:"🇩🇪",cities:[["베를린","Europe/Berlin",52.52,13.40],["뮌헨","Europe/Berlin",48.14,11.58],["프랑크푸르트","Europe/Berlin",50.11,8.68]]},
+ {c:"NL",r:"E",n:"네덜란드",cur:"EUR",tip:5,f:"🇳🇱",cities:[["암스테르담","Europe/Amsterdam",52.37,4.90]]},
+ {c:"BE",r:"E",n:"벨기에",cur:"EUR",tip:0,f:"🇧🇪",cities:[["브뤼셀","Europe/Brussels",50.85,4.35]]},
+ {c:"CH",r:"E",n:"스위스",cur:"CHF",tip:0,f:"🇨🇭",cities:[["취리히","Europe/Zurich",47.37,8.54],["인터라켄","Europe/Zurich",46.69,7.86]]},
+ {c:"AT",r:"E",n:"오스트리아",cur:"EUR",tip:10,f:"🇦🇹",cities:[["빈","Europe/Vienna",48.21,16.37],["잘츠부르크","Europe/Vienna",47.81,13.04]]},
+ {c:"CZ",r:"E",n:"체코",cur:"CZK",tip:10,f:"🇨🇿",cities:[["프라하","Europe/Prague",50.08,14.44]]},
+ {c:"HU",r:"E",n:"헝가리",cur:"HUF",tip:10,f:"🇭🇺",cities:[["부다페스트","Europe/Budapest",47.50,19.04]]},
+ {c:"PL",r:"E",n:"폴란드",cur:"PLN",tip:10,f:"🇵🇱",cities:[["바르샤바","Europe/Warsaw",52.23,21.01],["크라쿠프","Europe/Warsaw",50.06,19.94]]},
+ {c:"HR",r:"E",n:"크로아티아",cur:"EUR",tip:10,f:"🇭🇷",cities:[["두브로브니크","Europe/Zagreb",42.65,18.09],["자그레브","Europe/Zagreb",45.81,15.98]]},
+ {c:"GR",r:"E",n:"그리스",cur:"EUR",tip:5,f:"🇬🇷",cities:[["아테네","Europe/Athens",37.98,23.73],["산토리니","Europe/Athens",36.39,25.46]]},
+ {c:"DK",r:"E",n:"덴마크",cur:"DKK",tip:0,f:"🇩🇰",cities:[["코펜하겐","Europe/Copenhagen",55.68,12.57]]},
+ {c:"NO",r:"E",n:"노르웨이",cur:"NOK",tip:0,f:"🇳🇴",cities:[["오슬로","Europe/Oslo",59.91,10.75],["트롬쇠","Europe/Oslo",69.65,18.96]]},
+ {c:"SE",r:"E",n:"스웨덴",cur:"SEK",tip:0,f:"🇸🇪",cities:[["스톡홀름","Europe/Stockholm",59.33,18.07]]},
+ {c:"FI",r:"E",n:"핀란드",cur:"EUR",tip:0,f:"🇫🇮",cities:[["헬싱키","Europe/Helsinki",60.17,24.94],["로바니에미","Europe/Helsinki",66.50,25.73]]},
+ {c:"IS",r:"E",n:"아이슬란드",cur:"ISK",tip:0,f:"🇮🇸",cities:[["레이캬비크","Atlantic/Reykjavik",64.15,-21.94]]},
+ {c:"AE",r:"M",n:"아랍에미리트",cur:"AED",tip:10,f:"🇦🇪",cities:[["두바이","Asia/Dubai",25.20,55.27],["아부다비","Asia/Dubai",24.45,54.38]]},
+ {c:"TR",r:"M",n:"튀르키예",cur:"TRY",tip:10,f:"🇹🇷",cities:[["이스탄불","Europe/Istanbul",41.01,28.98],["카파도키아","Europe/Istanbul",38.64,34.83]]},
+ {c:"EG",r:"M",n:"이집트",cur:"EGP",tip:10,f:"🇪🇬",cities:[["카이로","Africa/Cairo",30.04,31.24]]},
+ {c:"MA",r:"M",n:"모로코",cur:"MAD",tip:10,f:"🇲🇦",cities:[["마라케시","Africa/Casablanca",31.63,-7.98]]},
+ {c:"ZA",r:"M",n:"남아프리카공화국",cur:"ZAR",tip:15,f:"🇿🇦",cities:[["케이프타운","Africa/Johannesburg",-33.92,18.42]]},
+ {c:"US",r:"N",n:"미국",cur:"USD",tip:18,f:"🇺🇸",cities:[["뉴욕","America/New_York",40.71,-74.01],["로스앤젤레스","America/Los_Angeles",34.05,-118.24],["샌프란시스코","America/Los_Angeles",37.77,-122.42],["라스베이거스","America/Los_Angeles",36.17,-115.14],["시애틀","America/Los_Angeles",47.61,-122.33],["시카고","America/Chicago",41.88,-87.63],["덴버","America/Denver",39.74,-104.99],["하와이(호놀룰루)","Pacific/Honolulu",21.31,-157.86]]},
+ {c:"CA",r:"N",n:"캐나다",cur:"CAD",tip:15,f:"🇨🇦",cities:[["토론토","America/Toronto",43.65,-79.38],["밴쿠버","America/Vancouver",49.28,-123.12],["몬트리올","America/Toronto",45.50,-73.57],["캘거리","America/Edmonton",51.05,-114.07]]},
+ {c:"MX",r:"N",n:"멕시코",cur:"MXN",tip:10,f:"🇲🇽",cities:[["칸쿤","America/Cancun",21.16,-86.85],["멕시코시티","America/Mexico_City",19.43,-99.13]]},
+ {c:"BR",r:"N",n:"브라질",cur:"BRL",tip:10,f:"🇧🇷",cities:[["상파울루","America/Sao_Paulo",-23.55,-46.63],["리우데자네이루","America/Sao_Paulo",-22.91,-43.17]]},
+ {c:"PE",r:"N",n:"페루",cur:"PEN",tip:10,f:"🇵🇪",cities:[["쿠스코","America/Lima",-13.53,-71.97],["리마","America/Lima",-12.05,-77.04]]},
+ {c:"AR",r:"N",n:"아르헨티나",cur:"ARS",tip:10,f:"🇦🇷",cities:[["부에노스아이레스","America/Argentina/Buenos_Aires",-34.60,-58.38]]},
+ {c:"CL",r:"N",n:"칠레",cur:"CLP",tip:10,f:"🇨🇱",cities:[["산티아고","America/Santiago",-33.45,-70.67]]},
+ {c:"AU",r:"O",n:"호주",cur:"AUD",tip:0,f:"🇦🇺",cities:[["시드니","Australia/Sydney",-33.87,151.21],["멜버른","Australia/Melbourne",-37.81,144.96],["브리즈번","Australia/Brisbane",-27.47,153.03],["골드코스트","Australia/Brisbane",-28.02,153.40],["케언스","Australia/Brisbane",-16.92,145.77],["퍼스","Australia/Perth",-31.95,115.86]]},
+ {c:"NZ",r:"O",n:"뉴질랜드",cur:"NZD",tip:0,f:"🇳🇿",cities:[["오클랜드","Pacific/Auckland",-36.85,174.76],["퀸스타운","Pacific/Auckland",-45.03,168.66]]},
+ {c:"GU",r:"O",n:"괌",cur:"USD",tip:15,f:"🇬🇺",cities:[["괌","Pacific/Guam",13.44,144.79]]},
+ {c:"MP",r:"O",n:"사이판",cur:"USD",tip:15,f:"🇲🇵",cities:[["사이판","Pacific/Saipan",15.18,145.75]]},
+ {c:"FJ",r:"O",n:"피지",cur:"FJD",tip:0,f:"🇫🇯",cities:[["난디","Pacific/Fiji",-17.76,177.44]]},
+];
+// 처음 실행했는데 인터넷이 안 될 때만 쓰는 예시 환율 (1 USD 기준 근사치)
+const FALLBACK={USD:1,KRW:1390,JPY:150,CNY:7.15,TWD:31.5,HKD:7.78,MOP:8.02,MNT:3400,THB:33.5,VND:25600,LAK:21800,KHR:4050,PHP:57.5,SGD:1.32,MYR:4.4,IDR:16300,INR:88,NPR:140,LKR:300,MVR:15.4,UZS:12000,KZT:530,RUB:80,GBP:0.76,EUR:0.88,CHF:0.82,CZK:21.3,HUF:335,PLN:3.65,DKK:6.4,NOK:10.1,SEK:9.5,ISK:125,AED:3.67,TRY:41,EGP:48,MAD:9.1,ZAR:17.5,CAD:1.38,MXN:18.6,BRL:5.4,PEN:3.5,ARS:1400,CLP:950,AUD:1.53,NZD:1.70,FJD:2.25};
+const NODEC=new Set(["KRW","JPY","VND","IDR","LAK","KHR","MNT","UZS","KZT","HUF","ISK","CLP"]);
+const WMO={0:["☀️","맑음"],1:["🌤️","맑음"],2:["⛅","구름"],3:["☁️","흐림"],45:["🌫️","안개"],48:["🌫️","안개"],51:["🌦️","이슬비"],53:["🌦️","이슬비"],55:["🌦️","이슬비"],61:["🌧️","비"],63:["🌧️","비"],65:["🌧️","강한 비"],66:["🌧️","어는 비"],67:["🌧️","어는 비"],71:["🌨️","눈"],73:["🌨️","눈"],75:["❄️","폭설"],77:["🌨️","싸락눈"],80:["🌦️","소나기"],81:["🌧️","소나기"],82:["⛈️","소나기"],85:["🌨️","눈"],86:["🌨️","눈"],95:["⛈️","뇌우"],96:["⛈️","뇌우"],99:["⛈️","뇌우"]};
+
+const $=id=>document.getElementById(id);
+const byC=c=>COUNTRIES.find(x=>x.c===c);
+function load(){try{return JSON.parse(localStorage.getItem("fxcalc2"))}catch(e){return null}}
+function save(){try{localStorage.setItem("fxcalc2",JSON.stringify(S))}catch(e){}}
+const S=Object.assign({L:"JP",B:"KR",Li:0,Bi:0,tip:0,svc:0,ppl:3,expr:"1200×3+480×2"},load()||{});
+if(!byC(S.L))S.L="JP"; if(!byC(S.B))S.B="KR";
+const loc=(code,i)=>{const c=byC(code),x=c.cities[i]||c.cities[0];return {...c,city:x[0],tz:x[1],lat:x[2],lon:x[3]}};
+let rates={...FALLBACK};
+
+const toUsd=(v,cur)=>v/(rates[cur]||1);
+const conv=(v,a,b)=>toUsd(v,a)*(rates[b]||1);
+function fmt(v,cur){
+  if(!isFinite(v))v=0;
+  const d=NODEC.has(cur)?0:2;
+  return v.toLocaleString("ko-KR",{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+const money=(v,cur)=>`${fmt(v,cur)} ${cur}`;
+
+// ---- 국가 선택 ----
+const opts=Object.entries(R).map(([k,name])=>`<optgroup label="${name}">`+
+  COUNTRIES.filter(x=>x.r===k).map(x=>`<option value="${x.c}">${x.f} ${x.n} · ${x.cur}</option>`).join("")+`</optgroup>`).join("");
+$("selL").innerHTML=opts; $("selB").innerHTML=opts;
+$("selL").onchange=e=>{S.L=e.target.value;S.Li=0;S.tip=byC(S.L).tip;renderCards(true);settle()};
+$("selB").onchange=e=>{S.B=e.target.value;S.Bi=0;renderCards(true);settle()};
+document.querySelectorAll("[data-citysel]").forEach(sel=>sel.onchange=e=>{
+  const key=e.target.closest(".card").id==="cardL"?"Li":"Bi"; S[key]=+e.target.value; renderCards(true); save();
+});
+
+const cardEls=()=>[["cardL",loc(S.L,S.Li)],["cardB",loc(S.B,S.Bi)]];
+const q=(card,a)=>$(card).querySelector(`[${a}]`);
+function renderCards(fetchWx){
+  $("selL").value=S.L; $("selB").value=S.B;
+  for(const [id,c] of cardEls()){
+    q(id,"data-f").textContent=c.f; q(id,"data-n").textContent=c.n; q(id,"data-city").textContent=c.city;
+    const cs=q(id,"data-citysel"), multi=c.cities.length>1;
+    cs.closest(".c-city").classList.toggle("multi",multi); cs.hidden=!multi;
+    cs.innerHTML=c.cities.map((x,i)=>`<option value="${i}">${x[0]}</option>`).join("");
+    cs.value=String(Math.max(0,c.cities.findIndex(x=>x[0]===c.city)));
+    if(fetchWx)weather(id,c);
+  }
+  tick(); amounts();
+}
+function amounts(){
+  const L=byC(S.L).cur, v=current();
+  const list=[["cardL",L],["cardB",byC(S.B).cur]];
+  for(const [id,cur] of list){
+    const val=conv(v,L,cur), s=fmt(val,cur), el=q(id,"data-a");
+    const usd=id==="cardB"&&cur!=="USD"?`<span class="usd">(USD ${fmt(toUsd(v,L),"USD")})</span>`:"";
+    el.innerHTML=`<span class="n">${s}</span><small>${cur}</small>${usd}`;
+  }
+  fitAll();
+  const B=byC(S.B).cur, unit=NODEC.has(L)&&rates[L]>50?100:1;
+  q("cardL","data-r").textContent=`${unit} ${L} = ${fmt(conv(unit,L,B),B)} ${B}`;
+  {let u=1; while(conv(u,B,L)<1&&u<1e6)u*=10;
+   q("cardB","data-r").textContent=`${u.toLocaleString("ko-KR")} ${B} = ${fmtSmall(conv(u,B,L))} ${L}`;}
+}
+// 숫자가 카드 폭을 좌우로 꽉 채우도록 글자 크기 자동 조절
+function fitAll(){
+  // 세 줄 모두 같은 글자 크기로 맞춰 오른쪽 끝에서 나란히 비교되게
+  const ns=["cardL","cardB"].map(id=>q(id,"data-a"));
+  let size=56;
+  for(const box of ns){
+    const n=box.querySelector(".n"); if(!n)continue;
+    const cs=getComputedStyle(box), w=box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight); if(w<=0)continue;
+    n.style.fontSize="100px";
+    size=Math.min(size,Math.floor(100*w/n.scrollWidth*0.98));
+  }
+  size=Math.max(16,size);
+  for(const box of ns){const n=box.querySelector(".n");if(n)n.style.fontSize=size+"px"}
+}
+try{new ResizeObserver(()=>fitAll()).observe(document.querySelector(".board"))}catch(e){addEventListener("resize",fitAll)}
+document.fonts&&document.fonts.ready.then(fitAll);
+const fmtSmall=v=>v.toLocaleString("ko-KR",{maximumFractionDigits:v<1?4:2});
+
+function hm(tz){return new Date().toLocaleTimeString("ko-KR",{timeZone:tz,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false})}
+function tick(){for(const [id,c] of cardEls())q(id,"data-t").textContent=hm(c.tz)}
+setInterval(tick,1000);
+
+async function weather(id,c){
+  const el=q(id,"data-w"); if(!el.dataset.k||el.dataset.k!==c.city)el.textContent="—"; el.dataset.k=c.city;
+  try{
+    const r=await fetchT(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,weather_code&timezone=auto&forecast_days=1`);
+    if(el.dataset.k!==c.city)return;
+    const w=WMO[r.current.weather_code]||["🌡️",""];
+    el.textContent=`${w[0]} ${Math.round(r.current.temperature_2m)}°`; el.title=w[1];
+  }catch(e){if(el.dataset.k===c.city&&el.textContent==="—"){el.textContent="날씨 —";el.title="날씨 연결 불가"}}
+}
+
+// ---- 계산기 ----
+const OPS="+-*/";
+const show=e=>e.replace(/\*/g,"×").replace(/\//g,"÷").replace(/-/g,"−");
+const unshow=e=>e.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");
+let expr=unshow(S.expr), justEq=false;
+function evaluate(e){
+  const toks=e.match(/(\d*\.?\d+%?|\d+\.|[+\-*/])/g)||[];
+  const nums=[],ops=[];
+  const prec=o=>o==="+"||o==="-"?1:2;
+  const ap=()=>{const b=nums.pop(),a=nums.pop(),o=ops.pop();nums.push(o==="+"?a+b:o==="-"?a-b:o==="*"?a*b:(b===0?NaN:a/b))};
+  let expectNum=true,neg=false;
+  for(let i=0;i<toks.length;i++){const t=toks[i];
+    if(OPS.includes(t)&&t.length===1){
+      if(expectNum){if(t==="-")neg=!neg;continue}
+      while(ops.length&&prec(ops.at(-1))>=prec(t))ap();
+      ops.push(t);expectNum=true;
+    }else{
+      let v=parseFloat(t);
+      if(t.endsWith("%")){
+        v/=100;
+        const op=toks[i-1];
+        // 100+10% → 100의 10%를 더함 (폰 계산기 방식)
+        if(i>=2&&(op==="+"||op==="-"))v*=evaluate(toks.slice(0,i-1).join(""));
+      }
+      if(neg){v=-v;neg=false}
+      nums.push(v);expectNum=false;
+    }
+  }
+  if(expectNum&&ops.length)ops.pop();
+  while(ops.length&&nums.length>1)ap();
+  return nums.length?nums[0]:0;
+}
+const current=()=>{const v=evaluate(expr);return isFinite(v)?v:0};
+function lastNum(){const m=expr.match(/[\d.%]*$/);return m?m[0]:""}
+function press(k){
+  if(k==="C"){expr="";justEq=false}
+  else if(k==="back"){expr=expr.slice(0,-1);justEq=false}
+  else if(k==="="){const v=evaluate(expr);if(expr&&isFinite(v)){$("dExpr").textContent=show(expr)+" =";expr=String(+v.toFixed(6));justEq=true;S.expr=expr;draw(true);return}}
+  else if(OPS.includes(k)){
+    if(!expr&&k!=="-")return;
+    if(OPS.includes(expr.slice(-1)))expr=expr.slice(0,-1);
+    expr+=k;justEq=false;
+  }else if(k==="%"){const n=lastNum();if(n&&!n.includes("%"))expr+="%"}
+  else{ // 숫자, 00, .
+    if(justEq){expr="";justEq=false}
+    const n=lastNum();
+    if(n.includes("%"))return;
+    if(k==="."){if(n.includes("."))return;expr+=n?".":"0.";}
+    else if(n==="0"&&k!=="."){expr=expr.slice(0,-1)+(k==="00"?"0":k)}
+    else if(k==="00"&&!n)expr+="0";
+    else expr+=k;
+    if(lastNum().replace(/\D/g,"").length>12)expr=expr.slice(0,-k.length);
+  }
+  S.expr=expr; draw(false);
+}
+function draw(keepExpr){
+  const L=byC(S.L).cur, v=current();
+  if(!keepExpr)$("dExpr").innerHTML=expr?show(expr).replace(/[&<>]/g,""):"&nbsp;";
+  $("dVal").innerHTML=`${fmt(v,L)}<small>${L}</small>`;
+  amounts(); settle();
+}
+$("pad").addEventListener("click",e=>{const b=e.target.closest("button");if(b)press(b.dataset.k)});
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="SELECT")return;
+  const m={Enter:"=",Backspace:"back",Escape:"C",Delete:"C"}[e.key]||e.key;
+  if(/^[0-9.+\-*/%=]$/.test(m)||["back","C"].includes(m)){e.preventDefault();press(m)}
+});
+
+// ---- 정산 ----
+const CHIPS={tip:[0,10,15,20],svc:[0,5,10,15],ppl:[2,3,4,5]};
+for(const k in CHIPS)document.querySelector(`[data-chips="${k}"]`).innerHTML=CHIPS[k].map(v=>`<button data-chip="${k}" data-v="${v}">${v}${k==="ppl"?"명":"%"}</button>`).join("");
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-s]"),c=e.target.closest("[data-chip]");
+  if(s){const k=s.dataset.s;S[k]=Math.max(k==="ppl"?1:0,Math.min(k==="ppl"?99:100,S[k]+ +s.dataset.d));settle()}
+  if(c){S[c.dataset.chip]=+c.dataset.v;settle()}
+});
+function settle(){
+  const c=byC(S.L), L=c.cur, B=byC(S.B).cur;
+  const sub=current(), tip=sub*S.tip/100, svc=sub*S.svc/100, tot=sub+tip+svc, per=tot/S.ppl;
+  $("oTip").textContent=S.tip+"%"; $("oSvc").textContent=S.svc+"%"; $("oPpl").textContent=S.ppl+"명";
+  document.querySelectorAll("[data-chip]").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.chip]===+b.dataset.v));
+  {const ch=c.n.charCodeAt(c.n.length-1), josa=(ch>=0xAC00&&ch<=0xD7A3&&(ch-0xAC00)%28)?"은":"는";
+  $("tipHint").textContent=c.tip?`${c.n}${josa} 보통 ${c.tip}% 정도`:`${c.n}${josa} 팁 문화가 거의 없어요`;}
+  $("sSub").textContent=money(sub,L);
+  $("sTipL").textContent=`Tip ${S.tip}%`; $("sTip").textContent=money(tip,L);
+  $("sSvcL").textContent=`Service ${S.svc}%`; $("sSvc").textContent=money(svc,L);
+  $("sTot").textContent=money(tot,L);
+  $("perL").textContent=`1인당 · ${S.ppl}분의 1`;
+  $("pMain").textContent=money(per,L);
+  $("pB").textContent=L===B?"":"≈ "+money(conv(per,L,B),B);
+  $("pU").textContent=L==="USD"?"":"≈ "+money(toUsd(per,L),"USD");
+  save();
+}
+
+// ---- 실시간 환율 ----
+function fetchT(url,ms=7000){
+  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms);
+  return fetch(url,{signal:ac.signal}).then(r=>{clearTimeout(t);if(!r.ok)throw 0;return r.json()});
+}
+function setStatus(ok,text){const s=$("fxStatus");s.className="status "+(ok?"live":"off");s.querySelector("span").textContent=text}
+const whenStr=ms=>new Date(ms).toLocaleString("ko-KR",{year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+function showDate(ms,stale){
+  $("fxWhen").textContent=ms?whenStr(ms):"예시 환율 (인터넷 연결 후 갱신)";
+  $("fxDate").classList.toggle("stale",!!stale||!ms);
+}
+function useCache(){
+  try{const c=JSON.parse(localStorage.getItem("fxrates"));if(c&&c.rates&&c.t){rates={...FALLBACK,...c.rates};return c.t}}catch(e){}
+  return 0;
+}
+async function loadRates(){
+  try{
+    const r=await fetchT("https://open.er-api.com/v6/latest/USD");
+    if(r.result!=="success")throw 0;
+    rates={...FALLBACK,...r.rates};
+    const t=r.time_last_update_unix*1000;
+    try{localStorage.setItem("fxrates",JSON.stringify({rates:r.rates,t}))}catch(e){}
+    setStatus(true,"실시간 환율"); showDate(t,false);
+  }catch(e){
+    const t=useCache();
+    if(t){setStatus(false,"오프라인 · 저장된 환율");showDate(t,true)}
+    else{setStatus(false,"예시 환율 · 연결 안 됨");showDate(0,true)}
+  }
+  draw(true); $("dExpr").innerHTML=expr?show(expr):"&nbsp;";
+}
+
+{const t=useCache(); showDate(t,true); if(t)setStatus(false,"저장된 환율 · 확인 중");}
+renderCards(true);
+draw(false);
+loadRates();
+setInterval(loadRates,60*60*1000);
+setInterval(()=>cardEls().forEach(([id,c])=>weather(id,c)),30*60*1000);
+</script>
+
+<script>
+if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
