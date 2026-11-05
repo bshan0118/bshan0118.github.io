@@ -293,9 +293,9 @@ const WMO={0:["☀️","맑음"],1:["🌤️","맑음"],2:["⛅","구름"],3:["�
 
 const $=id=>document.getElementById(id);
 const byC=c=>COUNTRIES.find(x=>x.c===c);
-function load(){try{return JSON.parse(localStorage.getItem("fxcalc2"))}catch(e){return null}}
-function save(){try{localStorage.setItem("fxcalc2",JSON.stringify(S))}catch(e){}}
-const S=Object.assign({L:"JP",B:"KR",Li:0,Bi:0,tip:0,svc:0,ppl:3,expr:"1200×3+480×2"},load()||{});
+function load(){try{return JSON.parse(localStorage.getItem("fxcalc3"))}catch(e){return null}}
+function save(){try{localStorage.setItem("fxcalc3",JSON.stringify(S))}catch(e){}}
+const S=Object.assign({L:"JP",B:"KR",Li:0,Bi:0,tip:0,svc:0,ppl:1,expr:""},load()||{});
 if(!byC(S.L))S.L="JP"; if(!byC(S.B))S.B="KR";
 const loc=(code,i)=>{const c=byC(code),x=c.cities[i]||c.cities[0];return {...c,city:x[0],tz:x[1],lat:x[2],lon:x[3]}};
 let rates={...FALLBACK};
