@@ -1,1 +1,8 @@
-[]
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.bshan0118.travelfx",
+    "sha256_cert_fingerprints": ["47:51:80:20:45:B0:59:3D:D2:BD:F0:A8:94:5A:DB:AB:10:BC:24:ED:1A:C0:24:69:06:B0:ED:B5:AC:79:97:26"]
+  }
+}]
