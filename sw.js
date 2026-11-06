@@ -2,7 +2,7 @@
 // 앱 화면은 오프라인에서도 열리도록 저장하고, 환율·날씨 API는 항상 네트워크로 받아요
 // (오프라인일 때의 환율은 앱이 기기에 저장해 둔 마지막 값을 써요).
 // 앱 파일을 수정해서 다시 배포할 때는 VERSION 숫자를 올려 주세요.
-const VERSION = "v2";
+const VERSION = "v3";
 const APP_CACHE = "app-" + VERSION;
 const FONT_CACHE = "fonts-v1";
 const APP_FILES = [
