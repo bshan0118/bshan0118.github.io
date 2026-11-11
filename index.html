@@ -21,15 +21,18 @@
 :root{
   --bg:#E9EDF1; --paper:#FBFCFD; --ink:#13202E; --muted:#5B6878; --line:#D3DAE2;
   --key:#F1F4F7; --accent:#1F4FD1; --accent-ink:#FFFFFF; --accent-soft:#E3EAFB; --stamp:#C2412D; --good:#1E7A55;
+  --up:#D23F31; --up-soft:#FCEBE8; --down:#1F63D6; --star:#B7791F; --star-soft:#FBF1DC; --veil:rgba(251,252,253,.82);
   --f-sans:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0E141B; --paper:#17202A; --ink:#E6ECF2; --muted:#93A1B1; --line:#2A3542;
-  --key:#1E2935; --accent:#7DA2FF; --accent-ink:#0E141B; --accent-soft:#1D2A44; --stamp:#F0806C; --good:#5FCB9C; color-scheme:dark}}
+  --key:#1E2935; --accent:#7DA2FF; --accent-ink:#0E141B; --accent-soft:#1D2A44; --stamp:#F0806C; --good:#5FCB9C;
+  --up:#FF7B6E; --up-soft:#3A201D; --down:#7FB0FF; --star:#F2C14E; --star-soft:#3A3120; --veil:rgba(23,32,42,.82); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E141B; --paper:#17202A; --ink:#E6ECF2; --muted:#93A1B1; --line:#2A3542;
-  --key:#1E2935; --accent:#7DA2FF; --accent-ink:#0E141B; --accent-soft:#1D2A44; --stamp:#F0806C; --good:#5FCB9C; color-scheme:dark}
+  --key:#1E2935; --accent:#7DA2FF; --accent-ink:#0E141B; --accent-soft:#1D2A44; --stamp:#F0806C; --good:#5FCB9C;
+  --up:#FF7B6E; --up-soft:#3A201D; --down:#7FB0FF; --star:#F2C14E; --star-soft:#3A3120; --veil:rgba(23,32,42,.82); color-scheme:dark}
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;color-scheme:light}
@@ -39,7 +42,7 @@ img{max-width:100%}
 [hidden]{display:none!important}
 button{touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.45;
-  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:14px 28px}
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:14px calc(96px + env(safe-area-inset-bottom,0px))}
 @media (min-width:480px){body{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
 .wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(10px,2.5vw,16px)}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
@@ -134,6 +137,82 @@ button,select,input{font:inherit;color:inherit}
 .per .main{font-size:clamp(28px,8.5vw,36px)!important}
 .per .conv{display:flex;flex-wrap:wrap;gap:2px 14px;font-family:var(--f-mono);font-size:16px;color:var(--muted);margin-top:2px}
 .foot{font-size:13px;color:var(--muted);text-align:center;margin:0}
+
+/* ---- 하단 탭 ---- */
+.view{display:flex;flex-direction:column;gap:clamp(10px,2.5vw,16px)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border-top:1px solid var(--line);
+  padding:6px max(12px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;position:relative;border-radius:10px}
+.tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-current="page"]{color:var(--accent)}
+.tab .dot{position:absolute;top:4px;left:calc(50% + 8px);width:10px;height:10px;border-radius:50%;background:var(--up);border:2px solid var(--paper)}
+
+/* ---- 환율 추이 ---- */
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(12px,3vw,16px);min-width:0}
+.p-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.p-head h2{margin:0;font-size:18px}
+.p-head span{font-size:13px;color:var(--muted)}
+.fav-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:4px;margin:-4px}
+.fav-row::-webkit-scrollbar{display:none}
+.fav{flex:none;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px 6px 8px;cursor:pointer;position:relative}
+.fav .ff{font-size:24px;line-height:1}
+.fav .fn{display:flex;flex-direction:column;line-height:1.15;font-weight:600;font-size:14px;text-align:left}
+.fav .fn small{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-weight:500}
+.fav[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.fav .hot{position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;background:var(--up);border:2px solid var(--paper)}
+.fav.add{color:var(--accent);font-weight:600;font-size:14px;padding:6px 16px;border-style:dashed}
+.fav.add select{position:absolute;inset:0;opacity:0;font-size:16px;cursor:pointer;width:100%}
+.t-alert{background:var(--up-soft);border:1px solid var(--up);border-radius:12px;padding:10px 12px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.t-alert b{color:var(--up)}
+.t-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.t-who{display:flex;align-items:center;gap:10px;min-width:0}
+.t-flag{font-size:40px;line-height:1}
+.t-who b{display:block;font-size:21px;line-height:1.2}
+.t-who div span{display:block;font-size:13px;color:var(--muted);font-family:var(--f-mono)}
+.star{flex:none;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)}
+.star[aria-pressed="true"]{color:var(--star);border-color:var(--star);background:var(--star-soft)}
+.t-now{display:flex;align-items:baseline;gap:6px;margin-top:12px;flex-wrap:wrap}
+.t-val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:clamp(34px,10vw,46px);font-weight:600;letter-spacing:-.02em;line-height:1.05}
+.t-unit{font-family:var(--f-mono);color:var(--muted);font-weight:600;font-size:16px}
+.t-chg{font-family:var(--f-mono);font-size:15px;color:var(--muted);margin-top:2px}
+.t-chg.up{color:var(--up)} .t-chg.down{color:var(--down)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bg);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:none;background:none;border-radius:8px;padding:9px 0;font-weight:600;font-size:15px;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0/.14)}
+#tPeriod{margin-top:14px}
+.t-tip{font-size:13px;color:var(--muted);margin-top:10px;min-height:1.4em;text-align:right;font-family:var(--f-mono)}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:210px;touch-action:pan-y;overflow:visible}
+.g-grid{stroke:var(--line);stroke-width:1}
+.g-lbl{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.g-line{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.g-end{fill:var(--accent);stroke:var(--paper);stroke-width:2}
+.g-lo{fill:var(--paper);stroke:var(--down);stroke-width:2.2} .g-lo-t{fill:var(--down);font-family:var(--f-mono);font-size:11px;font-weight:600}
+.g-hi{fill:var(--paper);stroke:var(--up);stroke-width:2.2} .g-hi-t{fill:var(--up);font-family:var(--f-mono);font-size:11px;font-weight:600}
+.g-tgt{stroke:var(--good);stroke-width:1.6;stroke-dasharray:5 4} .g-tgt-t{fill:var(--good);font-family:var(--f-sans);font-size:11px;font-weight:700}
+.g-x{stroke:var(--muted);stroke-width:1;stroke-dasharray:2 3} .g-xd{fill:var(--ink);stroke:var(--paper);stroke-width:2}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 16px;font-size:14px;color:var(--muted);background:var(--veil);border-radius:8px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+@media (min-width:600px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.stats div{background:var(--bg);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.stats span{font-size:12px;color:var(--muted);font-weight:600}
+.stats b{font-family:var(--f-mono);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats small{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.stats .lo b{color:var(--down)} .stats .hi b{color:var(--up)}
+.t-note{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.al-row{display:flex;flex-direction:column;gap:8px;padding-block:12px;border-top:1px dashed var(--line)}
+.al-row.first{border-top:none;padding-top:0}
+.al-row b{font-size:16px}
+.al-row p{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+.target{display:flex;align-items:center;gap:8px}
+.target .pre,.target .u{font-family:var(--f-mono);color:var(--muted);font-weight:600;white-space:nowrap;font-size:14px}
+.target input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;font-family:var(--f-mono);font-size:18px;text-align:right}
+.btn{border:none;background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.linkbtn{border:none;background:none;color:var(--muted);text-decoration:underline;font-size:13px;padding:0;cursor:pointer;align-self:flex-start}
+#aTStat.met{color:var(--good);font-weight:600}
+.perm{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);margin-top:4px}
+.perm div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px}
+.perm .ok{color:var(--good);font-weight:700} .perm .warn{color:var(--stamp);font-weight:700}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -144,6 +223,7 @@ button,select,input{font:inherit;color:inherit}
     <span class="status" id="fxStatus"><i></i><span>환율 불러오는 중</span></span>
   </header>
 
+  <div class="view" id="vCalc">
   <section class="board" aria-label="환율">
     <div class="card local" id="cardL">
       <div class="c-role">현지</div>
@@ -218,9 +298,61 @@ button,select,input{font:inherit;color:inherit}
       </div>
     </section>
   </div>
+  </div>
+
+  <div class="view" id="vTrend" hidden>
+    <section class="panel" aria-label="즐겨찾기">
+      <div class="p-head"><h2>즐겨찾기</h2><span id="tBase">기준 KRW</span></div>
+      <div class="fav-row" id="favRow"></div>
+    </section>
+    <div class="t-alert" id="tAlert" hidden></div>
+    <section class="panel" aria-label="환율 추이">
+      <div class="t-head">
+        <div class="t-who"><span class="t-flag" id="tFlag"></span><div><b id="tName"></b><span id="tPair"></span></div></div>
+        <button class="star" id="tStar" aria-pressed="false">☆ 즐겨찾기</button>
+      </div>
+      <div class="t-now"><span class="t-val" id="tVal">—</span><span class="t-unit" id="tUnit"></span></div>
+      <div class="t-chg" id="tChg">&nbsp;</div>
+      <div class="seg" id="tPeriod" role="group" aria-label="기간">
+        <button data-p="1w">1주</button><button data-p="1m">1개월</button><button data-p="3m">3개월</button><button data-p="1y">1년</button>
+      </div>
+      <div class="t-tip" id="tTip">&nbsp;</div>
+      <div class="chart" id="tChart"><svg id="tSvg" role="img" aria-label="환율 추이 그래프"></svg><div class="loading" id="tLoad">불러오는 중…</div></div>
+      <div class="stats">
+        <div><span>평균</span><b id="sAvg">—</b><small>&nbsp;</small></div>
+        <div class="lo"><span>최저</span><b id="sMin">—</b><small id="sMinD">&nbsp;</small></div>
+        <div class="hi"><span>최고</span><b id="sMax">—</b><small id="sMaxD">&nbsp;</small></div>
+        <div><span>변동폭</span><b id="sRng">—</b><small id="sRngP">&nbsp;</small></div>
+      </div>
+      <p class="t-note" id="tNote"></p>
+    </section>
+    <section class="panel" aria-label="알림 설정">
+      <div class="p-head"><h2>알림</h2><span id="aFor"></span></div>
+      <div class="al-row first">
+        <b>기간 최저가 알림</b>
+        <p>환율이 지난 1주 또는 1개월 중 가장 낮아지면 알려줘요. 환전하기 좋은 때예요.</p>
+        <div class="seg" id="aLow" role="group" aria-label="최저가 알림 기간"><button data-low="">끄기</button><button data-low="1w">1주 최저</button><button data-low="1m">1개월 최저</button></div>
+      </div>
+      <div class="al-row">
+        <b>목표 환율 알림</b>
+        <p id="aTHint">이 값 이하로 내려가면 알려줘요.</p>
+        <div class="target"><span class="pre" id="aPre">100 JPY ≤</span><input id="aTarget" inputmode="decimal" autocomplete="off" aria-label="목표 환율"><span class="u" id="aU">KRW</span><button class="btn" id="aSave">저장</button></div>
+        <p id="aTStat"></p>
+        <button class="linkbtn" id="aClear" hidden>목표 지우기</button>
+      </div>
+      <div class="perm" id="aPerm"></div>
+    </section>
+    <p class="fxdate">추이 데이터 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener">fawazahmed0 Exchange API</a> · 하루 한 번 갱신</p>
+  </div>
   <p class="foot">계산기에 현지 통화 금액을 입력하세요. 환율은 참고용이며 카드·환전소 환율과 차이가 있을 수 있어요.<br>날씨 정보: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a> · <a href="privacy.html" style="color:inherit">개인정보처리방침</a></p>
 </div>
 
+<nav class="tabbar" aria-label="화면 전환">
+  <a class="tab" href="#calc" data-v="calc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01"/></svg><span>계산기</span></a>
+  <a class="tab" href="#trend" data-v="trend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5.5-5.5 4 4L20 8"/><path d="M15 8h5v5"/></svg><span>환율 추이</span><i class="dot" id="trendDot" hidden></i></a>
+</nav>
+
+<script src="fx-core.js"></script>
 <script>
 // 지역별 국가 · 도시 [이름, 시간대, 위도, 경도]
 const R={A:"아시아",E:"유럽",M:"중동·아프리카",N:"미주",O:"오세아니아·태평양"};
@@ -442,7 +574,7 @@ function draw(keepExpr){
 }
 $("pad").addEventListener("click",e=>{const b=e.target.closest("button");if(b)press(b.dataset.k)});
 document.addEventListener("keydown",e=>{
-  if(e.target.tagName==="SELECT")return;
+  if(["SELECT","INPUT","TEXTAREA"].includes(e.target.tagName)||$("vCalc").hidden)return;
   const m={Enter:"=",Backspace:"back",Escape:"C",Delete:"C"}[e.key]||e.key;
   if(/^[0-9.+\-*/%=]$/.test(m)||["back","C"].includes(m)){e.preventDefault();press(m)}
 });
@@ -510,6 +642,226 @@ draw(false);
 loadRates();
 setInterval(loadRates,60*60*1000);
 setInterval(()=>cardEls().forEach(([id,c])=>weather(id,c)),30*60*1000);
+</script>
+
+<script>
+// ===== 환율 추이 · 즐겨찾기 · 알림 =====
+(function(){
+const PER={"1w":"1주","1m":"1개월","3m":"3개월","1y":"1년"};
+const WD=["일","월","화","수","목","금","토"];
+const md=d=>{const [,m,dd]=d.split("-");return `${+m}/${+dd}`};
+const mdw=d=>{const t=new Date(d+"T00:00:00Z");return `${t.getUTCMonth()+1}월 ${t.getUTCDate()}일 (${WD[t.getUTCDay()]})`};
+const baseCur=()=>byC(S.B).cur;
+const curInfo=cur=>{
+  if(cur==="EUR")return {n:"유로",f:"🇪🇺"};
+  const c=COUNTRIES.find(x=>x.cur===cur&&!["GU","MP"].includes(x.c))||COUNTRIES.find(x=>x.cur===cur)||{n:cur,f:"🏳️"};
+  return {n:c.n,f:c.f};
+};
+if(!Array.isArray(S.favs)){const c=byC(S.L).cur;S.favs=c!==baseCur()?[c]:[]}
+if(!S.alerts||typeof S.alerts!=="object")S.alerts={};
+if(!PER[S.tPer])S.tPer="1m";
+if(!S.tSel)S.tSel=S.favs[0]||byC(S.L).cur;
+let status={}, view="calc", cur={pts:[],u:1,B:"KRW"};
+
+/* ---- 화면 전환 ---- */
+function route(){
+  const v=location.hash==="#trend"?"trend":"calc";
+  const changed=v!==view; view=v;
+  $("vCalc").hidden=v!=="calc"; $("vTrend").hidden=v!=="trend";
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-current",t.dataset.v===v?"page":"false"));
+  if(changed)scrollTo(0,0);
+  if(v==="trend"){renderFavs();renderTrend()} else fitAll();
+}
+addEventListener("hashchange",route);
+
+/* ---- 즐겨찾기 ---- */
+const addOpts='<option value="">통화 추가</option>'+Object.entries(R).map(([k,name])=>`<optgroup label="${name}">`+
+  COUNTRIES.filter(x=>x.r===k).map(x=>`<option value="${x.cur}">${x.f} ${x.n} · ${x.cur}</option>`).join("")+`</optgroup>`).join("");
+function renderFavs(){
+  const B=baseCur();
+  $("tBase").textContent=`기준 ${byC(S.B).f} ${B}`;
+  $("favRow").innerHTML=S.favs.map(c=>{const i=curInfo(c),st=status[c],hot=st&&(st.isLow||st.belowTarget);
+    return `<button class="fav" data-cur="${c}" aria-pressed="${c===S.tSel}"><span class="ff">${i.f}</span><span class="fn">${i.n}<small>${c}</small></span>${hot?'<i class="hot" title="알림 조건 충족"></i>':""}</button>`}).join("")+
+    `<label class="fav add">＋ 추가<select id="favAdd" aria-label="즐겨찾기 통화 추가">${addOpts}</select></label>`;
+  $("favAdd").onchange=e=>{const c=e.target.value;if(!c)return;if(!S.favs.includes(c))S.favs.push(c);S.tSel=c;save();syncAlerts();renderFavs();renderTrend()};
+}
+$("favRow").addEventListener("click",e=>{const b=e.target.closest(".fav[data-cur]");if(!b)return;S.tSel=b.dataset.cur;save();renderFavs();renderTrend()});
+$("tStar").onclick=()=>{
+  const c=S.tSel,i=S.favs.indexOf(c);
+  if(i>=0)S.favs.splice(i,1); else S.favs.push(c);
+  save();syncAlerts();renderFavs();renderStar();
+};
+function renderStar(){const on=S.favs.includes(S.tSel);$("tStar").setAttribute("aria-pressed",on);$("tStar").textContent=on?"★ 즐겨찾기":"☆ 즐겨찾기"}
+
+/* ---- 추이 ---- */
+$("tPeriod").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(!b)return;S.tPer=b.dataset.p;save();renderTrend()});
+let seq=0;
+async function renderTrend(){
+  const my=++seq, B=baseCur(), c=S.tSel, info=curInfo(c);
+  $("tFlag").textContent=info.f; $("tName").textContent=`${info.n} ${c}`;
+  renderStar();
+  document.querySelectorAll("#tPeriod [data-p]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.p===S.tPer));
+  renderAlertUI();
+  const load=$("tLoad"); load.hidden=false;
+  if(c===B){load.textContent="기준 통화와 같은 통화예요. 다른 통화를 골라 주세요.";$("tSvg").innerHTML="";return}
+  load.textContent="불러오는 중…";
+  const {latest,points}=await FX.series(B,c,S.tPer);
+  if(my!==seq)return;
+  if(points.length<2){load.textContent="추이 데이터를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.";return}
+  const u=FX.unitFor(c,points[points.length-1].v);
+  const pts=points.map(p=>({d:p.d,v:p.v*u}));
+  cur={pts,u,B,c};
+  const now=pts[pts.length-1].v, first=pts[0].v, diff=now-first, pct=diff/first*100;
+  $("tPair").textContent=`${u.toLocaleString("ko-KR")} ${c} 기준`;
+  $("tVal").textContent=FX.fmt(now); $("tUnit").textContent=B;
+  const chg=$("tChg"); chg.className="t-chg"+(diff>0?" up":diff<0?" down":"");
+  chg.textContent=`${PER[S.tPer]} 전보다 ${diff>0?"▲":diff<0?"▼":"―"} ${FX.fmt(Math.abs(diff))} (${diff>=0?"+":""}${pct.toFixed(2)}%)`;
+  const vs=pts.map(p=>p.v), mn=Math.min(...vs), mx=Math.max(...vs), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
+  const iMin=vs.lastIndexOf(mn), iMax=vs.lastIndexOf(mx);
+  $("sAvg").textContent=FX.fmt(avg);
+  $("sMin").textContent=FX.fmt(mn); $("sMinD").textContent=md(pts[iMin].d);
+  $("sMax").textContent=FX.fmt(mx); $("sMaxD").textContent=md(pts[iMax].d);
+  $("sRng").textContent=FX.fmt(mx-mn); $("sRngP").textContent=`${((mx-mn)/mn*100).toFixed(2)}%`;
+  $("tNote").textContent=`${latest.date.replace(/-/g,".")} 기준 · ${S.tPer==="3m"?"3일 간격 · ":S.tPer==="1y"?"7일 간격 · ":""}값이 낮을수록 ${c}를 싸게 살 수 있어요`;
+  drawChart();
+  renderAlertUI();
+  load.hidden=true;
+}
+function drawChart(){
+  const {pts,B}=cur; if(!pts.length)return;
+  const svg=$("tSvg"), W=Math.max(260,Math.round($("tChart").clientWidth)), H=210, L=4, RR=58, T=20, BM=24;
+  const vs=pts.map(p=>p.v); let lo=Math.min(...vs), hi=Math.max(...vs);
+  const a=S.alerts[cur.c], tgt=a&&a.target>0&&a.tb===B?a.target:null, span=(hi-lo)||hi*0.01;
+  const showT=tgt&&tgt>=lo-span*1.2&&tgt<=hi+span*1.2;
+  if(showT){lo=Math.min(lo,tgt);hi=Math.max(hi,tgt)}
+  const pad=((hi-lo)||hi*0.01)*0.14; lo-=pad; hi+=pad;
+  const n=pts.length, x=i=>L+(W-L-RR)*(i/(n-1)), y=v=>T+(H-T-BM)*(1-(v-lo)/(hi-lo));
+  let g=`<defs><linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.28"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs>`;
+  for(let k=0;k<4;k++){const v=lo+pad+(hi-lo-2*pad)*k/3, yy=y(v).toFixed(1);
+    g+=`<line class="g-grid" x1="${L}" x2="${W-RR+4}" y1="${yy}" y2="${yy}"/><text class="g-lbl" x="${W-RR+8}" y="${yy}" dy="4">${FX.fmt(v)}</text>`}
+  const line=pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`).join("");
+  g+=`<path d="${line}L${x(n-1).toFixed(1)} ${H-BM}L${x(0).toFixed(1)} ${H-BM}Z" fill="url(#tGrad)"/><path class="g-line" d="${line}"/>`;
+  [0,Math.floor((n-1)/2),n-1].forEach((i,k)=>{g+=`<text class="g-lbl" x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${["start","middle","end"][k]}">${md(pts[i].d)}</text>`});
+  if(showT){const yy=y(tgt).toFixed(1);g+=`<line class="g-tgt" x1="${L}" x2="${W-RR+4}" y1="${yy}" y2="${yy}"/><text class="g-tgt-t" x="${L+2}" y="${yy}" dy="-5">목표 ${FX.fmt(tgt)}</text>`}
+  const iMin=vs.lastIndexOf(Math.min(...vs)), iMax=vs.lastIndexOf(Math.max(...vs));
+  const lbl=(i,cls,txt,up)=>{const xx=x(i),anchor=xx<60?"start":xx>W-RR-40?"end":"middle";
+    return `<circle class="${cls}" cx="${xx.toFixed(1)}" cy="${y(vs[i]).toFixed(1)}" r="4.5"/><text class="${cls}-t" x="${xx.toFixed(1)}" y="${y(vs[i]).toFixed(1)}" dy="${up?-10:18}" text-anchor="${anchor}">${txt} ${FX.fmt(vs[i])}</text>`};
+  if(iMax!==iMin)g+=lbl(iMax,"g-hi","최고",true);
+  g+=lbl(iMin,"g-lo","최저",false);
+  g+=`<circle class="g-end" cx="${x(n-1).toFixed(1)}" cy="${y(vs[n-1]).toFixed(1)}" r="5"/>`;
+  g+=`<g id="tCross" visibility="hidden"><line class="g-x" y1="${T-6}" y2="${H-BM}"/><circle class="g-xd" r="5"/></g>`;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.innerHTML=g;
+  svg._geo={x,y,L,RR,W,n};
+  tipDefault();
+}
+function tipDefault(){const p=cur.pts[cur.pts.length-1];if(p)$("tTip").textContent=`${mdw(p.d)} · ${FX.fmt(p.v)} ${cur.B}`}
+function pointAt(ev){
+  const svg=$("tSvg"),G=svg._geo; if(!G)return;
+  const r=svg.getBoundingClientRect(), px=(ev.clientX-r.left)/r.width*G.W;
+  const i=Math.max(0,Math.min(G.n-1,Math.round((px-G.L)/(G.W-G.L-G.RR)*(G.n-1)))), p=cur.pts[i];
+  const g=$("tCross"); if(!g)return; g.setAttribute("visibility","visible");
+  const xx=G.x(i).toFixed(1), yy=G.y(p.v).toFixed(1);
+  g.querySelector("line").setAttribute("x1",xx); g.querySelector("line").setAttribute("x2",xx);
+  g.querySelector("circle").setAttribute("cx",xx); g.querySelector("circle").setAttribute("cy",yy);
+  $("tTip").textContent=`${mdw(p.d)} · ${FX.fmt(p.v)} ${cur.B}`;
+}
+const svgEl=$("tSvg");
+svgEl.addEventListener("pointermove",pointAt);
+svgEl.addEventListener("pointerdown",pointAt);
+svgEl.addEventListener("pointerleave",()=>{const g=$("tCross");if(g)g.setAttribute("visibility","hidden");tipDefault()});
+try{new ResizeObserver(()=>{if(view==="trend")drawChart()}).observe($("tChart"))}catch(e){}
+
+/* ---- 알림 설정 ---- */
+function alertOf(c){return S.alerts[c]||{low:"",target:null,tb:baseCur()}}
+function setAlert(c,patch){
+  S.alerts[c]=Object.assign(alertOf(c),patch);
+  if(!S.favs.includes(c))S.favs.push(c);   // 알림을 켠 통화는 자동으로 즐겨찾기
+  save();syncAlerts();renderFavs();renderAlertUI();drawChart();
+}
+$("aLow").addEventListener("click",e=>{const b=e.target.closest("[data-low]");if(!b)return;setAlert(S.tSel,{low:b.dataset.low})});
+function saveTarget(){
+  const v=parseFloat(String($("aTarget").value).replace(/[^\d.]/g,""));
+  setAlert(S.tSel,{target:v>0?v:null,tb:baseCur()});
+  $("aTarget").blur();
+}
+$("aSave").onclick=saveTarget;
+$("aTarget").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();saveTarget()}});
+$("aClear").onclick=()=>{$("aTarget").value="";setAlert(S.tSel,{target:null})};
+function renderAlertUI(){
+  const c=S.tSel,B=baseCur(),a=alertOf(c),i=curInfo(c);
+  const u=cur.c===c&&cur.u?cur.u:FX.unitFor(c,1/(rates[c]||1)*(rates[B]||1));
+  $("aFor").textContent=`${i.f} ${i.n} ${c}`;
+  document.querySelectorAll("#aLow [data-low]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.low===(a.low||"")));
+  $("aPre").textContent=`${u.toLocaleString("ko-KR")} ${c} ≤`; $("aU").textContent=B;
+  const tgt=a.target>0&&a.tb===B?a.target:null;
+  if(document.activeElement!==$("aTarget"))$("aTarget").value=tgt?FX.fmt(tgt).replace(/,/g,""):"";
+  $("aClear").hidden=!tgt;
+  const now=cur.c===c&&cur.pts.length?cur.pts[cur.pts.length-1].v:null;
+  $("aTarget").placeholder=now?`예: ${FX.fmt(now*0.98).replace(/,/g,"")}`:"목표 값";
+  const st=$("aTStat"); st.className="";
+  if(tgt&&now!=null){ if(now<=tgt){st.className="met";st.textContent=`✓ 지금 ${FX.fmt(now)} ${B} · 목표 이하예요`} else st.textContent=`지금 ${FX.fmt(now)} ${B} · 목표까지 ${FX.fmt(now-tgt)} ${B} 남았어요`}
+  else st.textContent=tgt?"":"목표를 저장하면 그 값 이하로 내려갈 때 알려드려요.";
+  $("aTHint").textContent=`${u.toLocaleString("ko-KR")} ${c}가 이 값 이하로 내려가면 알려줘요.`;
+}
+
+/* ---- 알림 상태 동기화 (서비스 워커와 공유) ---- */
+async function syncAlerts(notify){
+  const B=baseCur();
+  const favs=S.favs.filter(c=>c!==B).map(c=>{const a=alertOf(c),i=curInfo(c);return {cur:c,n:i.n,f:i.f,low:a.low||"",target:a.target>0&&a.tb===B?a.target:null}});
+  await FX.kv.set("alerts",{base:B,favs});
+  await refreshStatus(notify);
+}
+async function refreshStatus(notify){
+  let reg=null; try{reg=await navigator.serviceWorker.getRegistration()}catch(e){}
+  const can=notify&&"Notification" in window&&Notification.permission==="granted";
+  let res; try{res=await FX.checkAlerts({notify:can,reg})}catch(e){return}
+  status={}; res.ev.forEach(e=>status[e.cur]=e);
+  const hot=res.ev.filter(e=>e.isLow||e.belowTarget);
+  $("trendDot").hidden=!hot.length;
+  const box=$("tAlert"); box.hidden=!hot.length;
+  box.innerHTML=hot.map(e=>{const u=`${e.u.toLocaleString("ko-KR")} ${e.cur}`, why=[e.isLow?`지난 ${PER[e.low]} 중 최저`:"",e.belowTarget?`목표 ${FX.fmt(e.target)} 이하`:""].filter(Boolean).join(" · ");
+    return `<div>🔔 ${e.f} <b>${e.n} ${e.cur}</b> ${u} = ${FX.fmt(e.v)} ${baseCur()} · ${why}</div>`}).join("");
+  if(view==="trend")renderFavs();
+}
+async function regPeriodic(){
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    if(!("periodicSync" in reg))return false;
+    const st=await navigator.permissions.query({name:"periodic-background-sync"});
+    if(st.state!=="granted")return false;
+    await reg.periodicSync.register("fx-check",{minInterval:12*60*60*1000});
+    return true;
+  }catch(e){return false}
+}
+async function renderPerm(){
+  const el=$("aPerm");
+  if(!("Notification" in window)){el.innerHTML=`<div><span>이 기기에서는 휴대폰 알림을 보낼 수 없어요.</span><span>앱을 열면 위쪽에 표시해 드려요.</span></div>`;return}
+  const p=Notification.permission;
+  if(p==="granted"){
+    const bg=await regPeriodic();
+    el.innerHTML=`<div><span class="ok">휴대폰 알림 켜짐</span><span>${bg?"앱을 닫아도 하루 한 번쯤 자동으로 확인해요.":"앱을 열 때마다 확인해서 알려드려요."}</span></div>`;
+  }else if(p==="denied"){
+    el.innerHTML=`<div><span class="warn">휴대폰 알림이 꺼져 있어요</span><span>휴대폰 설정 → 애플리케이션 → 여행 환율 계산기 → 알림에서 켤 수 있어요.</span></div>`;
+  }else{
+    el.innerHTML=`<div><span>알림을 켜면 조건이 맞을 때 휴대폰으로 알려드려요.</span></div><button class="btn" id="aPermBtn">알림 켜기</button>`;
+    $("aPermBtn").onclick=async()=>{try{await Notification.requestPermission()}catch(e){} renderPerm(); refreshStatus(true)};
+  }
+}
+
+/* ---- 기준 통화가 바뀌면 다시 계산 ---- */
+$("selB").addEventListener("change",()=>{syncAlerts(false);if(view==="trend"){renderFavs();renderTrend()}});
+
+/* ---- 시작 ---- */
+let lastFresh=Date.now();
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)return;
+  if(Date.now()-lastFresh>60*60*1000){FX.reset();lastFresh=Date.now();if(view==="trend")renderTrend()}
+  refreshStatus(true);
+});
+route();
+renderPerm();
+syncAlerts(true);
+})();
 </script>
 
 <script>

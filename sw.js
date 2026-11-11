@@ -2,12 +2,17 @@
 // 앱 화면은 오프라인에서도 열리도록 저장하고, 환율·날씨 API는 항상 네트워크로 받아요
 // (오프라인일 때의 환율은 앱이 기기에 저장해 둔 마지막 값을 써요).
 // 앱 파일을 수정해서 다시 배포할 때는 VERSION 숫자를 올려 주세요.
-const VERSION = "v4";
+const VERSION = "v5";
 const APP_CACHE = "app-" + VERSION;
 const FONT_CACHE = "fonts-v1";
+const KEEP = ["fonts-v1", "fx-hist-v1"]; // 지우지 않는 저장소 (글꼴, 과거 환율)
+
+// 환율 추이·알림 공용 코드
+importScripts("fx-core.js");
 const APP_FILES = [
   "./",
   "index.html",
+  "fx-core.js",
   "privacy.html",
   "manifest.webmanifest",
   "icons/icon-192.png",
@@ -25,7 +30,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== APP_CACHE && k !== FONT_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== APP_CACHE && !KEEP.includes(k)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -64,4 +69,22 @@ self.addEventListener("fetch", (e) => {
     }
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
   }
+});
+
+// 하루 한 번쯤 백그라운드에서 환율을 확인해 알림 보내기
+// (안드로이드 Chrome에서 설치한 앱만 지원. 실행 시점은 휴대폰이 정해요)
+self.addEventListener("periodicsync", (e) => {
+  if (e.tag === "fx-check") e.waitUntil(FX.checkAlerts({ notify: true, reg: self.registration }));
+});
+
+// 알림을 누르면 앱의 환율 추이 화면 열기
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || "./#trend", self.registration.scope).href;
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) { if ("focus" in c) { c.navigate(url).catch(() => {}); return c.focus(); } }
+      return self.clients.openWindow(url);
+    })
+  );
 });
