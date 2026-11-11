@@ -715,13 +715,13 @@ async function renderTrend(){
   $("tPair").textContent=`${u.toLocaleString("ko-KR")} ${c} 기준`;
   $("tVal").textContent=FX.fmt(now); $("tUnit").textContent=B;
   const chg=$("tChg"); chg.className="t-chg"+(diff>0?" up":diff<0?" down":"");
-  chg.textContent=`${PER[S.tPer]} 전보다 ${diff>0?"▲":diff<0?"▼":"―"} ${FX.fmt(Math.abs(diff))} (${diff>=0?"+":""}${pct.toFixed(2)}%)`;
+  chg.textContent=`${PER[S.tPer]} 전보다 ${diff>0?"▲":diff<0?"▼":"―"} ${FX.fmt(Math.abs(diff),now)} (${diff>=0?"+":""}${pct.toFixed(2)}%)`;
   const vs=pts.map(p=>p.v), mn=Math.min(...vs), mx=Math.max(...vs), avg=vs.reduce((a,b)=>a+b,0)/vs.length;
   const iMin=vs.lastIndexOf(mn), iMax=vs.lastIndexOf(mx);
   $("sAvg").textContent=FX.fmt(avg);
   $("sMin").textContent=FX.fmt(mn); $("sMinD").textContent=md(pts[iMin].d);
   $("sMax").textContent=FX.fmt(mx); $("sMaxD").textContent=md(pts[iMax].d);
-  $("sRng").textContent=FX.fmt(mx-mn); $("sRngP").textContent=`${((mx-mn)/mn*100).toFixed(2)}%`;
+  $("sRng").textContent=FX.fmt(mx-mn,mx); $("sRngP").textContent=`${((mx-mn)/mn*100).toFixed(2)}%`;
   $("tNote").textContent=`${latest.date.replace(/-/g,".")} 기준 · ${S.tPer==="3m"?"3일 간격 · ":S.tPer==="1y"?"7일 간격 · ":""}값이 낮을수록 ${c}를 싸게 살 수 있어요`;
   drawChart();
   renderAlertUI();
@@ -799,7 +799,7 @@ function renderAlertUI(){
   const now=cur.c===c&&cur.pts.length?cur.pts[cur.pts.length-1].v:null;
   $("aTarget").placeholder=now?`예: ${FX.fmt(now*0.98).replace(/,/g,"")}`:"목표 값";
   const st=$("aTStat"); st.className="";
-  if(tgt&&now!=null){ if(now<=tgt){st.className="met";st.textContent=`✓ 지금 ${FX.fmt(now)} ${B} · 목표 이하예요`} else st.textContent=`지금 ${FX.fmt(now)} ${B} · 목표까지 ${FX.fmt(now-tgt)} ${B} 남았어요`}
+  if(tgt&&now!=null){ if(now<=tgt){st.className="met";st.textContent=`✓ 지금 ${FX.fmt(now)} ${B} · 목표 이하예요`} else st.textContent=`지금 ${FX.fmt(now)} ${B} · 목표까지 ${FX.fmt(now-tgt,now)} ${B} 남았어요`}
   else st.textContent=tgt?"":"목표를 저장하면 그 값 이하로 내려갈 때 알려드려요.";
   $("aTHint").textContent=`${u.toLocaleString("ko-KR")} ${c}가 이 값 이하로 내려가면 알려줘요.`;
 }

@@ -107,7 +107,8 @@
 
   /* ---------- 알림 판단 ---------- */
   const PNAME = { "1w": "1주", "1m": "1개월" };
-  FX.fmt = (v) => v.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: v < 10 ? 4 : 2 });
+  /** ref를 주면 그 값과 같은 자릿수로 (차이·변동폭 표시용) */
+  FX.fmt = (v, ref) => { const r = ref == null ? Math.abs(v) : Math.abs(ref); return v.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: r < 10 ? 4 : 2 }); };
 
   /** 즐겨찾기마다 현재 값, 기간 최저 여부, 목표 도달 여부 계산 */
   FX.evaluate = async (cfg) => {
