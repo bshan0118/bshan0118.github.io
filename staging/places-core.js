@@ -27,7 +27,7 @@
   // 여행지로 보기 어려운 문서 (사건, 시설, 기관, 사람, 행정구역 등)
   const EXCLUDE = new RegExp([
     "\\bbattle\\b", "\\bsiege\\b", "massacre", "incident", "\\battack\\b", "bombing", "assassinat", "murder", "earthquake", "accident", "\\bcrash\\b", "\\briot\\b", "protest", "disaster",
-    "election", "constituency", "affair", "scandal", "arrondissement", "diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
+    "election", "constituency", "affair", "scandal", "^\\S*\\s*arrondissement", "^(roman catholic )?(arch)?diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
     "company", "corporation", "\\bbank\\b", "headquarters", "office building", "apartment", "\\bhotel\\b", "hostel", "police", "prison", "\\bcourt\\b",
     "ministry", "government", "political", "newspaper", "broadcaster", "television", "radio station", "record label", "publisher",
     "railway line", "metro line", "subway line", "bus (station|stop|route|terminal)", "expressway", "highway", "\\broad\\b", "power station",
