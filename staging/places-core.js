@@ -27,7 +27,7 @@
   // 여행지로 보기 어려운 문서 (사건, 시설, 기관, 사람, 행정구역 등)
   const EXCLUDE = new RegExp([
     "\\bbattle\\b", "\\bsiege\\b", "massacre", "incident", "\\battack\\b", "bombing", "assassinat", "murder", "earthquake", "accident", "\\bcrash\\b", "\\briot\\b", "protest", "disaster",
-    "election", "constituency", "affair", "scandal", "^\\S*\\s*arrondissement", "^(roman catholic )?(arch)?diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
+    "election", "constituency", "revolution", "revolutionary", "\\bcommune\\b", "uprising", "\\bweek\\b", "^(list|timeline|history) of", "demolished", "destroyed", "nightclub", "restaurant", "\\bbar\\b", "\\bcaf[eé]\\b", "^(ancient|gallo-roman|roman|former) (city|town|settlement)", "ceremony", "parade", "affair", "scandal", "^\\S*\\s*arrondissement", "^(roman catholic )?(arch)?diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
     "company", "corporation", "\\bbank\\b", "headquarters", "office building", "apartment", "\\bhotel\\b", "hostel", "police", "prison", "\\bcourt\\b",
     "ministry", "government", "political", "newspaper", "broadcaster", "television", "radio station", "record label", "publisher",
     "railway line", "metro line", "subway line", "bus (station|stop|route|terminal)", "expressway", "highway", "\\broad\\b", "power station",
@@ -36,7 +36,7 @@
     "사건", "전투", "학살", "사고", "병원", "대사관", "영사관", "학교", "대학", "회사", "기업", "은행", "정당", "선거구", "행정 구역", "정치인", "배우", "가수"
   ].join("|"), "i");
   // 제목으로 알 수 있는 사건·행사·기관
-  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b|affair|scandal|arrondissement|diocese|교구$|^파리 \d+구$|\d+구$/i;
+  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b|affair|scandal|^(list|timeline|history) of|semaine|\bweek\b|^fires? (in|of)|ceremony|개막식|폐막식|코뮌|혁명|nightclub|restaurant|arrondissement|diocese|교구$|^파리 \d+구$|\d+구$/i;
   const STATION = /(railway|train|metro|subway|underground|light rail|tram) station|역$/i;
 
   /* ---------- 위키백과 출처 ---------- */
@@ -48,23 +48,38 @@
   const api = (lang, q) => `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&${q}`;
   const sumViews = (pv) => pv ? Object.values(pv).reduce((a, b) => a + (b || 0), 0) : 0;
 
-  async function geo(lang, lat, lon, r) {
-    let q = `generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=${r}&ggslimit=60` +
-      `&prop=coordinates|pageimages|description|pageprops|pageviews&colimit=max&piprop=thumbnail&pithumbsize=320&pilimit=max&ppprop=wikibase_item&pvipdays=30`;
-    if (lang === "en") q = q.replace("pageviews&", "pageviews|langlinks&") + "&lllang=ko&lllimit=max";
-    // 위키백과는 조회 수·사진 등을 여러 번에 나눠 보내므로 끝까지 이어 받기
+  /** 이어 받기(continue)까지 모두 받아 페이지별로 합치기 */
+  async function queryAll(lang, q) {
     const pages = new Map(); let cont = "";
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < 10; k++) {
       const j = await getJSON(api(lang, q + cont));
       for (const p of (j.query && j.query.pages) || []) {
-        const m = pages.get(p.pageid) || {};
+        const m = pages.get(p.pageid || p.title) || {};
         for (const key in p) if (p[key] !== undefined) m[key] = p[key];
-        pages.set(p.pageid, m);
+        pages.set(p.pageid || p.title, m);
       }
       if (!j.continue) break;
       cont = "&" + new URLSearchParams(j.continue).toString();
     }
     return [...pages.values()];
+  }
+  function geo(lang, lat, lon, r) {
+    const other = lang === "en" ? "ko" : "en";
+    return queryAll(lang, `generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=${r}&ggslimit=80` +
+      `&prop=coordinates|pageimages|description|pageprops|pageviews|langlinks&colimit=max&piprop=thumbnail&pithumbsize=320&pilimit=max` +
+      `&ppprop=wikibase_item&pvipdays=30&lllang=${other}&lllimit=max`);
+  }
+  /** 한국어에만 잡힌 장소의 영어 문서 정보(설명·조회 수) 채우기 */
+  async function enInfo(titles) {
+    const out = {};
+    for (let i = 0; i < titles.length; i += 50) {
+      const chunk = titles.slice(i, i + 50);
+      try {
+        const pages = await queryAll("en", `prop=description|pageviews|pageimages&piprop=thumbnail&pithumbsize=320&pvipdays=30&redirects=1&titles=${encodeURIComponent(chunk.join("|"))}`);
+        pages.forEach((p) => { out[p.title] = p; });
+      } catch (e) {}
+    }
+    return out;
   }
   async function extracts(lang, titles) {
     const out = {};
@@ -97,8 +112,19 @@
         const key = (p.pageprops && p.pageprops.wikibase_item) || "ko:" + p.title;
         const m = map.get(key) || { key, en: null, enDesc: "", views: 0 };
         m.ko = p.title; m.koDesc = p.description || ""; m.co = m.co || (p.coordinates && p.coordinates[0]);
+        if (!m.en && p.langlinks && p.langlinks[0]) m.enLink = p.langlinks[0].title;
         m.thumb = m.thumb || (p.thumbnail && p.thumbnail.source); m.views += sumViews(p.pageviews);
         map.set(key, m);
+      }
+      // 한국어 결과에만 있는 장소: 영어 문서의 설명·조회 수를 더해서 같은 기준으로 거르고 순위 매기기
+      const need = [...map.values()].filter((m) => !m.en && m.enLink);
+      if (need.length) {
+        const info = await enInfo(need.map((m) => m.enLink));
+        for (const m of need) {
+          const x = info[m.enLink]; if (!x) continue;
+          m.en = x.title; m.enDesc = x.description || ""; m.views += sumViews(x.pageviews);
+          m.thumb = m.thumb || (x.thumbnail && x.thumbnail.source);
+        }
       }
       let items = [];
       for (const m of map.values()) {
