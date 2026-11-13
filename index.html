@@ -140,7 +140,7 @@ button,select,input{font:inherit;color:inherit}
 
 /* ---- 하단 탭 ---- */
 .view{display:flex;flex-direction:column;gap:clamp(10px,2.5vw,16px)}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border-top:1px solid var(--line);
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper);border-top:1px solid var(--line);
   padding:6px max(12px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;position:relative;border-radius:10px}
 .tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -213,7 +213,41 @@ button,select,input{font:inherit;color:inherit}
 .perm{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);margin-top:4px}
 .perm div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px}
 .perm .ok{color:var(--good);font-weight:700} .perm .warn{color:var(--stamp);font-weight:700}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---- 주변 볼거리 ---- */
+.n-src{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.n-src b{font-size:15px}
+.n-src .acts{display:flex;gap:6px}
+.ghost{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.n-note{margin:8px 0 0;font-size:13px;color:var(--stamp)}
+#nRadius{margin-top:12px}
+.n-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+.n-bar .seg{flex:none}
+.n-bar .seg button{padding:6px 12px;font-size:13px}
+#nCount{font-size:13px;color:var(--muted)}
+.kinds{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px;margin:10px -2px 0}
+.kinds::-webkit-scrollbar{display:none}
+.kchip{flex:none;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);white-space:nowrap}
+.kchip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.n-list{display:flex;flex-direction:column;gap:10px}
+.place{display:grid;grid-template-columns:clamp(72px,22vw,96px) minmax(0,1fr);gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px}
+.ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:32px;max-width:100%}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.rank{position:absolute;top:4px;left:4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-style:normal;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.pb{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pt b{display:block;font-size:17px;line-height:1.25}
+.pt small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;color:var(--muted)}
+.pm .kd{color:var(--ink);font-weight:600}
+.pd{margin:0;font-size:13px;line-height:1.5;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pd[lang="en"]{color:var(--muted)}
+.pa{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
+.pa a{border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;background:var(--paper)}
+.n-state{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 16px;color:var(--muted);font-size:14px}
+.n-state p{margin:0}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;vertical-align:-2px;animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.spin{animation:none}}
 </style>
 </head>
 <body>
@@ -344,15 +378,29 @@ button,select,input{font:inherit;color:inherit}
     </section>
     <p class="fxdate">추이 데이터 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noopener">fawazahmed0 Exchange API</a> · 하루 한 번 갱신</p>
   </div>
+  <div class="view" id="vNear" hidden>
+    <section class="panel" aria-label="기준 위치와 반경">
+      <div class="n-src"><b id="nSrc">📍 내 위치 기준</b><div class="acts"><button class="ghost" id="nSrcBtn">🏙 도시 중심으로</button><button class="ghost" id="nRefresh" aria-label="새로고침">↻</button></div></div>
+      <p class="n-note" id="nNote" hidden></p>
+      <div class="seg" id="nRadius" role="group" aria-label="반경"></div>
+      <div class="n-bar"><span id="nCount"></span><div class="seg" id="nSort" role="group" aria-label="정렬"><button data-s="pop">인기순</button><button data-s="dist">거리순</button></div></div>
+      <div class="kinds" id="nKinds" role="group" aria-label="분류"></div>
+    </section>
+    <div class="n-state" id="nState" hidden></div>
+    <div class="n-list" id="nList"></div>
+    <p class="fxdate">장소 정보 <a href="https://ko.wikipedia.org" target="_blank" rel="noopener">위키백과 (CC BY-SA)</a> · 위치는 약 100m 단위로만 사용해요</p>
+  </div>
   <p class="foot">계산기에 현지 통화 금액을 입력하세요. 환율은 참고용이며 카드·환전소 환율과 차이가 있을 수 있어요.<br>날씨 정보: <a href="https://open-meteo.com" target="_blank" rel="noopener" style="color:inherit">Open-Meteo</a> · <a href="privacy.html" style="color:inherit">개인정보처리방침</a></p>
 </div>
 
 <nav class="tabbar" aria-label="화면 전환">
   <a class="tab" href="#calc" data-v="calc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01"/></svg><span>계산기</span></a>
   <a class="tab" href="#trend" data-v="trend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5.5-5.5 4 4L20 8"/><path d="M15 8h5v5"/></svg><span>환율 추이</span><i class="dot" id="trendDot" hidden></i></a>
+  <a class="tab" href="#near" data-v="near"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>주변</span></a>
 </nav>
 
 <script src="fx-core.js"></script>
+<script src="places-core.js"></script>
 <script>
 // 지역별 국가 · 도시 [이름, 시간대, 위도, 경도]
 const R={A:"아시아",E:"유럽",M:"중동·아프리카",N:"미주",O:"오세아니아·태평양"};
@@ -665,12 +713,12 @@ let status={}, view="calc", cur={pts:[],u:1,B:"KRW"};
 
 /* ---- 화면 전환 ---- */
 function route(){
-  const v=location.hash==="#trend"?"trend":"calc";
+  const v=location.hash==="#trend"?"trend":location.hash==="#near"?"near":"calc";
   const changed=v!==view; view=v;
-  $("vCalc").hidden=v!=="calc"; $("vTrend").hidden=v!=="trend";
+  $("vCalc").hidden=v!=="calc"; $("vTrend").hidden=v!=="trend"; $("vNear").hidden=v!=="near";
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-current",t.dataset.v===v?"page":"false"));
   if(changed)scrollTo(0,0);
-  if(v==="trend"){renderFavs();renderTrend()} else fitAll();
+  if(v==="trend"){renderFavs();renderTrend()} else if(v==="near"){if(window.nearShow)nearShow()} else fitAll();
 }
 addEventListener("hashchange",route);
 
@@ -861,6 +909,99 @@ document.addEventListener("visibilitychange",()=>{
 route();
 renderPerm();
 syncAlerts(true);
+})();
+</script>
+
+<script>
+// ===== 주변 볼거리 =====
+(function(){
+const RADII=[[500,"500m"],[1000,"1km"],[3000,"3km"],[5000,"5km"]];
+const PROVIDER="wiki";
+if(![500,1000,3000,5000].includes(S.nearR))S.nearR=1000;
+if(!["pop","dist"].includes(S.nearSort))S.nearSort="pop";
+if(!S.nearKind)S.nearKind="all";
+if(!["gps","city"].includes(S.nearSrc))S.nearSrc="gps";
+let center=null, items=[], seq=0;
+
+/* 기준 위치 */
+function cityCenter(){const c=loc(S.L,S.Li);return {lat:c.lat,lon:c.lon,label:`${c.f} ${c.city} 중심`,src:"city"}}
+function getPos(){return new Promise((res,rej)=>{
+  if(!navigator.geolocation)return rej({code:-1});
+  navigator.geolocation.getCurrentPosition(p=>res(p.coords),rej,{enableHighAccuracy:false,timeout:12000,maximumAge:5*60*1000});
+})}
+async function locate(){
+  if(S.nearSrc==="city"){center=cityCenter();return null}
+  $("nSrc").textContent="📍 내 위치 확인 중…";
+  try{const c=await getPos();center={lat:c.latitude,lon:c.longitude,label:"📍 내 위치 기준",src:"gps",acc:c.accuracy};return null}
+  catch(e){center=cityCenter();return e&&e.code===1?"위치 권한이 꺼져 있어 도시 중심으로 보여드려요.":"현재 위치를 찾지 못해 도시 중심으로 보여드려요."}
+}
+
+/* 화면 */
+function chips(){
+  $("nRadius").innerHTML=RADII.map(([v,l])=>`<button data-r="${v}" aria-pressed="${v===S.nearR}">${l}</button>`).join("");
+  $("nSort").querySelectorAll("[data-s]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===S.nearSort));
+  const counts={}; items.forEach(i=>counts[i.kind]=(counts[i.kind]||0)+1);
+  const kinds=[{id:"all",label:"전체",icon:""},...Places.KINDS,{id:"etc",label:"기타",icon:"📍"}].filter(k=>k.id==="all"||counts[k.id]);
+  if(!kinds.some(k=>k.id===S.nearKind))S.nearKind="all";
+  $("nKinds").innerHTML=kinds.map(k=>`<button class="kchip" data-k="${k.id}" aria-pressed="${k.id===S.nearKind}">${k.icon?k.icon+" ":""}${k.label}${k.id==="all"?` ${items.length}`:` ${counts[k.id]}`}</button>`).join("");
+}
+const walk=m=>m<1000?`${Math.round(m/10)*10}m`:`${(m/1000).toFixed(1)}km`;
+const mins=m=>Math.max(1,Math.round(m/75));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function list(){
+  const kindInfo=Object.fromEntries(Places.KINDS.map(k=>[k.id,k]));
+  let rows=items.filter(i=>S.nearKind==="all"||i.kind===S.nearKind);
+  rows=rows.slice().sort(S.nearSort==="dist"?(a,b)=>a.dist-b.dist:(a,b)=>b.views-a.views);
+  $("nCount").textContent=items.length?`${walk(S.nearR)} 안 ${rows.length}곳 · ${S.nearSort==="pop"?"많이 찾아본 순":"가까운 순"}`:"";
+  $("nList").innerHTML=rows.map((p,i)=>{const k=kindInfo[p.kind]||{label:"기타",icon:"📍"};
+    return `<article class="place">
+      <div class="ph">${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:`<span>${k.icon}</span>`}${S.nearSort==="pop"&&i<3?`<i class="rank">${i+1}</i>`:""}</div>
+      <div class="pb">
+        <div class="pt"><b>${esc(p.name)}</b>${p.sub?`<small>${esc(p.sub)}</small>`:""}</div>
+        <div class="pm"><span class="kd">${k.icon} ${k.label}</span><span>${walk(p.dist)} · 도보 ${mins(p.dist)}분</span></div>
+        ${p.desc?`<p class="pd"${p.descLang==="en"?' lang="en"':""}>${esc(p.desc)}</p>`:""}
+        <div class="pa"><a href="${p.links.map}" target="_blank" rel="noopener">지도</a><a href="${p.links.dir}" target="_blank" rel="noopener">길찾기</a><a href="${p.links.info}" target="_blank" rel="noopener">자세히</a></div>
+      </div></article>`}).join("");
+}
+function state(msg,btn){
+  $("nState").hidden=!msg; $("nState").innerHTML=msg?`<p>${msg}</p>${btn||""}`:"";
+  const r=$("nRetry"); if(r)r.onclick=()=>run(true);
+  const w=$("nWiden"); if(w)w.onclick=()=>{const i=RADII.findIndex(x=>x[0]===S.nearR);S.nearR=RADII[Math.min(RADII.length-1,i+1)][0];save();run(false)};
+}
+async function run(relocate){
+  const my=++seq;
+  chips();
+  if(relocate||!center||center.src!==S.nearSrc){
+    state("");$("nList").innerHTML="";
+    const note=await locate(); if(my!==seq)return;
+    $("nNote").textContent=note||""; $("nNote").hidden=!note;
+  }
+  $("nSrc").textContent=center.label+(center.acc?` · ±${Math.round(center.acc)}m`:"");
+  $("nSrcBtn").textContent=center.src==="gps"?`🏙 ${loc(S.L,S.Li).city} 중심으로`:"📍 내 위치로";
+  $("nCount").textContent=""; $("nList").innerHTML=""; state(`<span class="spin"></span> 주변 볼거리를 찾는 중…`);
+  try{
+    const r=await Places.search(PROVIDER,{lat:center.lat,lon:center.lon,radius:S.nearR,limit:40});
+    if(my!==seq)return;
+    items=r; state(""); chips(); list();
+    if(!items.length)state(`${walk(S.nearR)} 안에서 위키백과에 소개된 볼거리를 찾지 못했어요.`,S.nearR<5000?`<button class="btn" id="nWiden">반경 넓히기</button>`:"");
+  }catch(e){
+    if(my!==seq)return;
+    items=[]; chips();
+    state("볼거리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.",`<button class="btn" id="nRetry">다시 시도</button>`);
+  }
+}
+$("nRadius").addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(!b)return;S.nearR=+b.dataset.r;save();run(false)});
+$("nSort").addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;S.nearSort=b.dataset.s;save();chips();list()});
+$("nKinds").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;S.nearKind=b.dataset.k;save();chips();list()});
+$("nSrcBtn").onclick=()=>{S.nearSrc=S.nearSrc==="gps"?"city":"gps";save();run(true)};
+$("nRefresh").onclick=()=>run(true);
+// 현지 국가·도시를 바꾸면 도시 중심 기준도 바뀌게
+["selL"].forEach(id=>$(id).addEventListener("change",()=>{if(S.nearSrc==="city")center=null}));
+document.querySelectorAll("#cardL [data-citysel]").forEach(s=>s.addEventListener("change",()=>{if(S.nearSrc==="city")center=null}));
+
+let shown=false;
+window.nearShow=()=>{ if(!shown||!center){shown=true;run(true)} };
+if(location.hash==="#near")nearShow();
 })();
 </script>
 
