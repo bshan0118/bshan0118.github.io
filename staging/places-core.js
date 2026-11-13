@@ -32,11 +32,11 @@
     "ministry", "government", "political", "newspaper", "broadcaster", "television", "radio station", "record label", "publisher",
     "railway line", "metro line", "subway line", "bus (station|stop|route|terminal)", "expressway", "highway", "\\broad\\b", "power station",
     "\\b(city|town|village|commune|county|province|prefecture|ward|district|neighbou?rhood|municipality|suburb) (in|of)\\b", "capital of", "administrative",
-    "\\(born ", "\\b(1[0-9]|20)\\d\\d[–-]", "politician", "\\bactor\\b", "actress", "singer", "footballer", "businessman", "species", "\\balbum\\b", "\\bfilm\\b", "\\bsong\\b", "\\bnovel\\b", "video game",
+    "\\(born ", "\\(\\s*(c\\.\\s*)?\\d{3,4}\\s*[–-]\\s*\\d{0,4}\\s*\\)", "politician", "\\bactor\\b", "actress", "singer", "footballer", "businessman", "species", "\\balbum\\b", "\\bfilm\\b", "\\bsong\\b", "\\bnovel\\b", "video game",
     "사건", "전투", "학살", "사고", "병원", "대사관", "영사관", "학교", "대학", "회사", "기업", "은행", "정당", "선거구", "행정 구역", "정치인", "배우", "가수"
   ].join("|"), "i");
   // 제목으로 알 수 있는 사건·행사·기관
-  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b|affair|scandal|^(list|timeline|history) of|semaine|\bweek\b|^fires? (in|of)|ceremony|개막식|폐막식|코뮌|혁명|nightclub|restaurant|arrondissement|diocese|교구$|^파리 \d+구$|\d+구$/i;
+  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b|affair|scandal|^(list|timeline|history) of|semaine|\bweek\b|^fires? (in|of)|ceremony|개막식|화재|\bfire$|\bfire of\b|경찰|\bpolice\b|폐막식|코뮌|혁명|nightclub|restaurant|arrondissement|diocese|교구$|^파리 \d+구$|\d+구$/i;
   const STATION = /(railway|train|metro|subway|underground|light rail|tram) station|역$/i;
 
   /* ---------- 위키백과 출처 ---------- */
