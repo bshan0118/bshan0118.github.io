@@ -35,6 +35,8 @@
     "\\(born ", "\\b(1[0-9]|20)\\d\\d[–-]", "politician", "\\bactor\\b", "actress", "singer", "footballer", "businessman", "species", "\\balbum\\b", "\\bfilm\\b", "\\bsong\\b", "\\bnovel\\b", "video game",
     "사건", "전투", "학살", "사고", "병원", "대사관", "영사관", "학교", "대학", "회사", "기업", "은행", "정당", "선거구", "행정 구역", "정치인", "배우", "가수"
   ].join("|"), "i");
+  // 제목으로 알 수 있는 사건·행사·기관
+  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b/i;
   const STATION = /(railway|train|metro|subway|underground|light rail|tram) station|역$/i;
 
   /* ---------- 위키백과 출처 ---------- */
@@ -50,8 +52,19 @@
     let q = `generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=${r}&ggslimit=60` +
       `&prop=coordinates|pageimages|description|pageprops|pageviews&colimit=max&piprop=thumbnail&pithumbsize=320&pilimit=max&ppprop=wikibase_item&pvipdays=30`;
     if (lang === "en") q = q.replace("pageviews&", "pageviews|langlinks&") + "&lllang=ko&lllimit=max";
-    const j = await getJSON(api(lang, q));
-    return (j.query && j.query.pages) || [];
+    // 위키백과는 조회 수·사진 등을 여러 번에 나눠 보내므로 끝까지 이어 받기
+    const pages = new Map(); let cont = "";
+    for (let k = 0; k < 8; k++) {
+      const j = await getJSON(api(lang, q + cont));
+      for (const p of (j.query && j.query.pages) || []) {
+        const m = pages.get(p.pageid) || {};
+        for (const key in p) if (p[key] !== undefined) m[key] = p[key];
+        pages.set(p.pageid, m);
+      }
+      if (!j.continue) break;
+      cont = "&" + new URLSearchParams(j.continue).toString();
+    }
+    return [...pages.values()];
   }
   async function extracts(lang, titles) {
     const out = {};
@@ -91,7 +104,8 @@
       for (const m of map.values()) {
         if (!m.co) continue;
         const text = [m.en, m.ko, m.enDesc, m.koDesc].filter(Boolean).join(" · ");
-        if (EXCLUDE.test(m.enDesc + " · " + m.koDesc)) continue;
+        if (EXCLUDE.test(m.enDesc + " · " + m.koDesc) || TITLE_EX.test((m.en || "") + " · " + (m.ko || ""))) continue;
+        if (/coup|rebellion|uprising|war\b|conflict/i.test(m.enDesc)) continue;
         if (STATION.test(m.enDesc + " " + (m.ko || "")) && m.views < 30000) continue; // 큰 역만 남기기
         m.kind = P.kindOf(text.toLowerCase());
         m.dist = P.dist(lat, lon, m.co.lat, m.co.lon);
