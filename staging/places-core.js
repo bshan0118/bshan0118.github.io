@@ -17,17 +17,17 @@
   /* ---------- 분류 ---------- */
   P.KINDS = [
     { id: "religion", label: "사찰·종교", icon: "⛩️", re: /temple|shrine|pagoda|church|cathedral|basilica|mosque|monastery|chapel|synagogue|사원|사찰|신사|성당|교회|모스크/ },
-    { id: "culture", label: "역사·문화", icon: "🏛️", re: /museum|gallery|castle|palace|ruin|archaeolog|historic|heritage|monument|memorial|statue|mausoleum|tomb|citadel|fortress|\bfort\b|theatre|theater|opera|library|박물관|미술관|성곽|궁전|유적|기념|동상/ },
-    { id: "nature", label: "자연·공원", icon: "🌳", re: /park|garden|beach|mountain|\bhill\b|lake|waterfall|island|river|\bzoo\b|aquarium|botanic|forest|\bcave\b|\bbay\b|공원|정원|해변|해수욕장|산|호수|폭포|섬|동물원|수족관/ },
-    { id: "street", label: "거리·쇼핑", icon: "🛍️", re: /street|market|shopping|square|plaza|crossing|arcade|\bmall\b|quarter|alley|거리|시장|광장|교차점|상점가/ },
-    { id: "arch", label: "건축·전망", icon: "🗼", re: /bridge|tower|skyscraper|building|observation|observatory|landmark|stadium|arena|station|다리|교량|타워|빌딩|전망|경기장|역$/ }
+    { id: "culture", label: "역사·문화", icon: "🏛️", re: /museum|gallery|castle|palace|ruin|archaeolog|historic|heritage|monument|memorial|statue|mausoleum|tomb|citadel|fortress|\bfort\b|theatre|theater|opera|concert hall|\bhall\b|library|triumphal|박물관|미술관|성곽|궁전|궁$|유적|기념|동상|개선문|극장|홀$/ },
+    { id: "street", label: "거리·쇼핑", icon: "🛍️", re: /street|market|shopping|department store|square|plaza|crossing|arcade|\bmall\b|quarter|alley|거리|시장|광장|교차점|상점가|백화점/ },
+    { id: "arch", label: "건축·전망", icon: "🗼", re: /bridge|tower|skyscraper|building|observation|observatory|landmark|stadium|arena|gymnasium|station|다리|교$|교량|타워|빌딩|전망|경기장|역$/ },
+    { id: "nature", label: "자연·공원", icon: "🌳", re: /park|garden|beach|mountain|\bhill\b|lake|waterfall|island|river|\bzoo\b|aquarium|botanic|forest|\bcave\b|\bbay\b|공원|정원|해변|해수욕장|호수|폭포|섬$|강$|동물원|수족관/ }
   ];
   P.kindOf = (text) => { for (const k of P.KINDS) if (k.re.test(text)) return k.id; return "etc"; };
 
   // 여행지로 보기 어려운 문서 (사건, 시설, 기관, 사람, 행정구역 등)
   const EXCLUDE = new RegExp([
     "\\bbattle\\b", "\\bsiege\\b", "massacre", "incident", "\\battack\\b", "bombing", "assassinat", "murder", "earthquake", "accident", "\\bcrash\\b", "\\briot\\b", "protest", "disaster",
-    "election", "constituency", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
+    "election", "constituency", "affair", "scandal", "arrondissement", "diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
     "company", "corporation", "\\bbank\\b", "headquarters", "office building", "apartment", "\\bhotel\\b", "hostel", "police", "prison", "\\bcourt\\b",
     "ministry", "government", "political", "newspaper", "broadcaster", "television", "radio station", "record label", "publisher",
     "railway line", "metro line", "subway line", "bus (station|stop|route|terminal)", "expressway", "highway", "\\broad\\b", "power station",
@@ -36,7 +36,7 @@
     "사건", "전투", "학살", "사고", "병원", "대사관", "영사관", "학교", "대학", "회사", "기업", "은행", "정당", "선거구", "행정 구역", "정치인", "배우", "가수"
   ].join("|"), "i");
   // 제목으로 알 수 있는 사건·행사·기관
-  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b/i;
+  const TITLE_EX = /사건|전투|학살|사고|폭동|대학교?$|학교$|병원$|대사관|방송 ?센터|본사|올림픽|선수권|\bincident\b|massacre|\bbattle of\b|\bsiege of\b|bombing|\battack\b|olympics|championship|\buniversity\b|\bschool\b|hospital|embassy|headquarters|\b(1[5-9]|20)\d\d\b|affair|scandal|arrondissement|diocese|교구$|^파리 \d+구$|\d+구$/i;
   const STATION = /(railway|train|metro|subway|underground|light rail|tram) station|역$/i;
 
   /* ---------- 위키백과 출처 ---------- */
