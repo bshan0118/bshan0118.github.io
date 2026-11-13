@@ -27,7 +27,7 @@
   // 여행지로 보기 어려운 문서 (사건, 시설, 기관, 사람, 행정구역 등)
   const EXCLUDE = new RegExp([
     "\\bbattle\\b", "\\bsiege\\b", "massacre", "incident", "\\battack\\b", "bombing", "assassinat", "murder", "earthquake", "accident", "\\bcrash\\b", "\\briot\\b", "protest", "disaster",
-    "election", "constituency", "revolution", "revolutionary", "\\bcommune\\b", "uprising", "\\bweek\\b", "^(list|timeline|history) of", "demolished", "destroyed", "nightclub", "restaurant", "\\bbar\\b", "\\bcaf[eé]\\b", "^(ancient|gallo-roman|roman|former) (city|town|settlement)", "ceremony", "parade", "affair", "scandal", "^\\S*\\s*arrondissement", "^(roman catholic )?(arch)?diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
+    "election", "constituency", "revolution", "revolutionary", "\\bcommune\\b", "uprising", "\\bweek\\b", "^(list|timeline|history) of", "demolished", "destroyed", "nightclub", "restaurant", "\\bbar\\b", "\\bcaf[eé]\\b", "^(ancient|gallo-roman|roman|former) (city|town|settlement)", "ceremony", "parade", "fashion house", "luxury goods", "\\bbrand\\b", "conglomerate", "multinational", "retailer", "affair", "scandal", "^\\S*\\s*arrondissement", "^(roman catholic )?(arch)?diocese", "military base", "air base", "naval base", "\\bdiamond\\b", "gemstone", "painting", "manuscript", "hospital", "clinic", "embassy", "consulate", "\\bschool\\b", "university", "college", "academy", "institute",
     "company", "corporation", "\\bbank\\b", "headquarters", "office building", "apartment", "\\bhotel\\b", "hostel", "police", "prison", "\\bcourt\\b",
     "ministry", "government", "political", "newspaper", "broadcaster", "television", "radio station", "record label", "publisher",
     "railway line", "metro line", "subway line", "bus (station|stop|route|terminal)", "expressway", "highway", "\\broad\\b", "power station",
@@ -94,6 +94,9 @@
     return out;
   }
 
+  // 설명에서 괄호 속 원어 표기·각주 표시 지우기
+  const tidy = (t) => { let s = t, prev; do { prev = s; s = s.replace(/\s*[(（][^()（）]*[)）]/g, ""); } while (s !== prev); return s.replace(/\[\*\]|\[\d+\]/g, "").replace(/\s{2,}/g, " ").trim(); };
+
   P.providers.wiki = {
     name: "위키백과",
     credit: { text: "장소 정보: 위키백과 (CC BY-SA)", url: "https://ko.wikipedia.org" },
@@ -152,7 +155,7 @@
         return {
           id: m.key, name, sub: m.ko && m.en ? enPlain : (m.enDesc || ""),
           lat: m.co.lat, lon: m.co.lon, dist: m.dist, kind: m.kind, views: m.views,
-          desc: (x && x.extract) || (m.ko ? m.koDesc : m.enDesc) || "", descLang: m.ko ? "ko" : "en",
+          desc: tidy((x && x.extract) || (m.ko ? m.koDesc : m.enDesc) || ""), descLang: m.ko ? "ko" : "en",
           thumb: m.thumb || null,
           links: {
             map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.en || name)}`,
